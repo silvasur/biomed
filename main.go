@@ -144,12 +144,19 @@ func (g *GUI) mkToolbox() *gtk.ScrolledWindow {
 	vbox.PackStart(g.showbiomes, false, false, 3)
 
 	fill := gtk.NewRadioButtonWithLabel(nil, "Fill")
-	draw := gtk.NewRadioButtonWithLabel(fill.GetGroup(), "Draw")
 	fill.SetActive(true)
 	fill.Connect("toggled", g.mkUpdateToolFx(fill, ToolFill))
+
+	draw := gtk.NewRadioButtonWithLabel(fill.GetGroup(), "Draw")
+	drawRadius := gtk.NewSpinButtonWithRange(1, 20, 1)
+	drawHBox := gtk.NewHBox(false, 0)
+	drawHBox.PackStart(draw, true, true, 3)
+	drawHBox.PackStart(gtk.NewLabel("Radius:"), false, false, 3)
+	drawHBox.PackEnd(drawRadius, false, false, 3)
 	draw.Connect("toggled", g.mkUpdateToolFx(draw, ToolDraw))
+
 	vbox.PackStart(fill, false, false, 3)
-	vbox.PackStart(draw, false, false, 3)
+	vbox.PackStart(drawHBox, false, false, 3)
 
 	vbox.PackStart(gtk.NewHSeparator(), false, false, 3)
 	vbox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
