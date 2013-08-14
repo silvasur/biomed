@@ -7,17 +7,12 @@ import (
 	"github.com/mattn/go-gtk/gtk"
 )
 
-type tool int
-
-const (
-	ToolDraw tool = iota
-	ToolFill
-)
-
 type GUI struct {
 	window     *gtk.Window
 	statusbar  *gtk.Statusbar
 	showbiomes *gtk.CheckButton
+
+	tool Tool
 }
 
 func (g *GUI) openWorldDlg() {
@@ -145,7 +140,7 @@ func (g *GUI) mkToolbox() *gtk.ScrolledWindow {
 
 	fill := gtk.NewRadioButtonWithLabel(nil, "Fill")
 	fill.SetActive(true)
-	fill.Connect("toggled", g.mkUpdateToolFx(fill, ToolFill))
+	fill.Connect("toggled", g.mkUpdateToolFx(fill, NewFillTool()))
 
 	draw := gtk.NewRadioButtonWithLabel(fill.GetGroup(), "Draw")
 	drawRadius := gtk.NewSpinButtonWithRange(1, 20, 1)
@@ -153,7 +148,7 @@ func (g *GUI) mkToolbox() *gtk.ScrolledWindow {
 	drawHBox.PackStart(draw, true, true, 3)
 	drawHBox.PackStart(gtk.NewLabel("Radius:"), false, false, 3)
 	drawHBox.PackEnd(drawRadius, false, false, 3)
-	draw.Connect("toggled", g.mkUpdateToolFx(draw, ToolDraw))
+	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return int(drawRadius.GetValue()) })))
 
 	vbox.PackStart(fill, false, false, 3)
 	vbox.PackStart(drawHBox, false, false, 3)
@@ -206,7 +201,7 @@ func (g *GUI) Init() {
 	g.window.Connect("destroy", g.exitApp)
 }
 
-func (g *GUI) mkUpdateToolFx(rb *gtk.RadioButton, t tool) func() {
+func (g *GUI) mkUpdateToolFx(rb *gtk.RadioButton, t Tool) func() {
 	return func() {
 		if rb.GetActive() {
 			g.setTool(t)
@@ -222,8 +217,8 @@ func (g *GUI) mkUpdateBiomeFx(rb *gtk.RadioButton, bio mcmap.Biome) func() {
 	}
 }
 
-func (g *GUI) setTool(t tool) {
-	fmt.Printf("Tool %d\n", t)
+func (g *GUI) setTool(t Tool) {
+	g.tool = t
 }
 
 func (g *GUI) setBiome(bio mcmap.Biome) {
