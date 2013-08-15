@@ -90,6 +90,8 @@ type MapWidget struct {
 
 	redraw   chan bool
 	tileCmds chan tileCmd
+
+	tool Tool
 }
 
 var (
@@ -104,6 +106,10 @@ func emptyPixmap(w, h, depth int) *gdk.Pixmap {
 func (mw *MapWidget) SetShowBiomes(b bool) {
 	mw.showBiomes = b
 	mw.redraw <- true
+}
+
+func (mw *MapWidget) SetTool(t Tool) {
+	mw.tool = t
 }
 
 func (mw *MapWidget) DArea() *gtk.DrawingArea { return mw.dArea }
@@ -157,31 +163,33 @@ func (mw *MapWidget) doTileCmds() {
 				}
 			}
 
-			for z := startZ; z < endZ; z++ {
-			scanX:
-				for x := startX; x < endX; x++ {
-					pos := XZPos{x, z}
+			if mw.region != nil {
+				for z := startZ; z < endZ; z++ {
+				scanX:
+					for x := startX; x < endX; x++ {
+						pos := XZPos{x, z}
 
-					if _, ok := mw.biotiles[pos]; ok {
-						continue scanX
+						if _, ok := mw.biotiles[pos]; ok {
+							continue scanX
+						}
+
+						chunk, err := mw.region.Chunk(x, z)
+						switch err {
+						case nil:
+						case mcmap.NotAvailable:
+							continue scanX
+						default:
+							mw.reportFail(fmt.Sprintf("Could not get chunk %d, %d: %s", x, z, err))
+							return
+						}
+
+						mw.maptiles[pos], mw.biotiles[pos], mw.bioCache[pos] = renderTile(chunk)
+						chunk.MarkUnused()
+
+						gdk.ThreadsLeave()
+						mw.redraw <- true
+						gdk.ThreadsEnter()
 					}
-
-					chunk, err := mw.region.Chunk(x, z)
-					switch err {
-					case nil:
-					case mcmap.NotAvailable:
-						continue scanX
-					default:
-						mw.reportFail(fmt.Sprintf("Could not get chunk %d, %d: %s", x, z, err))
-						return
-					}
-
-					mw.maptiles[pos], mw.biotiles[pos], mw.bioCache[pos] = renderTile(chunk)
-					chunk.MarkUnused()
-
-					gdk.ThreadsLeave()
-					mw.redraw <- true
-					gdk.ThreadsEnter()
 				}
 			}
 
@@ -338,6 +346,61 @@ func (mw *MapWidget) setRegion(region *mcmap.Region) {
 	mw.tileCmds <- cmdFlushTiles
 	mw.region = region
 	mw.tileCmds <- cmdUpdateTiles
+}
+
+func (mw *MapWidget) GetBiome(x, z int) (mcmap.Biome, bool) {
+	cx, cz, bx, bz := mcmap.BlockToChunk(x, z)
+	pos := XZPos{cx, cz}
+
+	if bc, ok := mw.bioCache[pos]; ok {
+		return bc[bz*mcmap.ChunkSizeXZ+bx], true
+	}
+
+	chunk, err := mw.region.Chunk(x, z)
+	switch err {
+	case nil:
+	case mcmap.NotAvailable:
+		return mcmap.BioUncalculated, false
+	default:
+		mw.reportFail(fmt.Sprintf("Error while getting chunk %d, %d: %s", cx, cz, err))
+		return mcmap.BioUncalculated, false
+	}
+	defer chunk.MarkUnused()
+
+	bc := make([]mcmap.Biome, mcmap.ChunkRectXZ)
+	i := 0
+	for z := 0; z < mcmap.ChunkSizeXZ; z++ {
+		for x := 0; x < mcmap.ChunkSizeXZ; x++ {
+			bc[i] = chunk.Biome(x, z)
+			i++
+		}
+	}
+	mw.bioCache[pos] = bc
+
+	return chunk.Biome(bx, bz), true
+}
+
+func (mw *MapWidget) SetBiome(x, z int, bio mcmap.Biome) {
+	cx, cz, bx, bz := mcmap.BlockToChunk(x, z)
+	pos := XZPos{cx, cz}
+
+	// Update cache
+	if bc, ok := mw.bioCache[pos]; ok {
+		bc[bz*mcmap.ChunkSizeXZ+bx] = bio
+	}
+
+	chunk, err := mw.region.Chunk(x, z)
+	switch err {
+	case nil:
+	case mcmap.NotAvailable:
+		return
+	default:
+		mw.reportFail(fmt.Sprintf("Error while getting chunk %d, %d: %s", cx, cz, err))
+		return
+	}
+	defer chunk.MarkUnused()
+
+	chunk.SetBiome(bx, bz, bio)
 }
 
 func NewMapWidget(reportFail func(msg string), updateInfo func(x, z int, bio mcmap.Biome)) *MapWidget {

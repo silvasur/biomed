@@ -17,8 +17,6 @@ type GUI struct {
 	statusContext uint
 
 	mapw *MapWidget
-
-	tool Tool
 }
 
 func (g *GUI) openWorldDlg() {
@@ -214,6 +212,8 @@ func (g *GUI) Init() {
 	g.window.SetDefaultSize(800, 600)
 
 	g.window.Connect("destroy", g.exitApp)
+
+	g.setTool(NewFillTool())
 }
 
 func (g *GUI) reportError(msg string) {
@@ -245,7 +245,7 @@ func (g *GUI) mkUpdateBiomeFx(rb *gtk.RadioButton, bio mcmap.Biome) func() {
 }
 
 func (g *GUI) setTool(t Tool) {
-	g.tool = t
+	g.mapw.SetTool(t)
 }
 
 func (g *GUI) setBiome(bio mcmap.Biome) {
