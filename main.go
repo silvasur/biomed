@@ -14,6 +14,8 @@ type GUI struct {
 	statusbar  *gtk.Statusbar
 	showbiomes *gtk.CheckButton
 
+	statusContext uint
+
 	mapw *MapWidget
 
 	tool Tool
@@ -196,7 +198,7 @@ func (g *GUI) Init() {
 
 	hbox := gtk.NewHBox(false, 0)
 
-	g.mapw = NewMapWidget(g.reportError)
+	g.mapw = NewMapWidget(g.reportError, g.updateInfo)
 	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
 	toolbox := g.mkToolbox()
@@ -205,6 +207,7 @@ func (g *GUI) Init() {
 	vbox.PackStart(hbox, true, true, 3)
 
 	g.statusbar = gtk.NewStatusbar()
+	g.statusContext = g.statusbar.GetContextId("mapinfo")
 	vbox.PackEnd(g.statusbar, false, false, 3)
 
 	g.window.Add(vbox)
@@ -218,6 +221,11 @@ func (g *GUI) reportError(msg string) {
 	dlg.Run()
 	dlg.Destroy()
 	os.Exit(1)
+}
+
+func (g *GUI) updateInfo(x, z int, bio mcmap.Biome) {
+	g.statusbar.Pop(g.statusContext)
+	g.statusbar.Push(g.statusContext, fmt.Sprintf("X:%d, Z:%d, Biome:%s", x, z, bio))
 }
 
 func (g *GUI) mkUpdateToolFx(rb *gtk.RadioButton, t Tool) func() {

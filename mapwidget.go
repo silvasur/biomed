@@ -24,7 +24,7 @@ const (
 	cmdSave
 )
 
-func renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap) {
+func renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap, biocache []mcmap.Biome) {
 	maptile = emptyPixmap(tileSize, tileSize, 24)
 	mtDrawable := maptile.GetDrawable()
 	mtGC := gdk.NewGC(mtDrawable)
@@ -33,11 +33,18 @@ func renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap) {
 	btDrawable := biotile.GetDrawable()
 	btGC := gdk.NewGC(btDrawable)
 
+	biocache = make([]mcmap.Biome, mcmap.ChunkRectXZ)
+
+	i := 0
 	for z := 0; z < mcmap.ChunkSizeXZ; z++ {
 	scanX:
 		for x := 0; x < mcmap.ChunkSizeXZ; x++ {
-			btGC.SetRgbFgColor(bioColors[chunk.Biome(x, z)])
+			bio := chunk.Biome(x, z)
+			btGC.SetRgbFgColor(bioColors[bio])
 			btDrawable.DrawRectangle(btGC, true, x*zoom, z*zoom, zoom, zoom)
+
+			biocache[i] = bio
+			i++
 
 			for y := chunk.Height(x, z); y >= 0; y-- {
 				if col, ok := blockColors[chunk.Block(x, y, z).ID]; ok {
@@ -60,6 +67,7 @@ type MapWidget struct {
 	w, h  int
 
 	reportFail func(msg string)
+	updateInfo func(x, z int, bio mcmap.Biome)
 
 	isInit bool
 
@@ -78,6 +86,7 @@ type MapWidget struct {
 
 	maptiles map[XZPos]*gdk.Pixmap
 	biotiles map[XZPos]*gdk.Pixmap
+	bioCache map[XZPos][]mcmap.Biome
 
 	redraw   chan bool
 	tileCmds chan tileCmd
@@ -116,6 +125,7 @@ func (mw *MapWidget) doTileCmds() {
 
 			mw.maptiles = make(map[XZPos]*gdk.Pixmap)
 			mw.biotiles = make(map[XZPos]*gdk.Pixmap)
+			mw.bioCache = make(map[XZPos][]mcmap.Biome)
 		case cmdUpdateTiles:
 			todelete := make(map[XZPos]bool)
 
@@ -141,6 +151,10 @@ func (mw *MapWidget) doTileCmds() {
 					tile.Unref()
 					delete(mw.biotiles, pos)
 				}
+
+				if _, ok := mw.bioCache[pos]; ok {
+					delete(mw.bioCache, pos)
+				}
 			}
 
 			for z := startZ; z < endZ; z++ {
@@ -162,7 +176,7 @@ func (mw *MapWidget) doTileCmds() {
 						return
 					}
 
-					mw.maptiles[pos], mw.biotiles[pos] = renderTile(chunk)
+					mw.maptiles[pos], mw.biotiles[pos], mw.bioCache[pos] = renderTile(chunk)
 					chunk.MarkUnused()
 
 					gdk.ThreadsLeave()
@@ -195,7 +209,9 @@ func (mw *MapWidget) configure() {
 	mw.pixmapGC = gdk.NewGC(mw.pixmap.GetDrawable())
 
 	mw.drawBg()
-	mw.compose()
+	gdk.ThreadsLeave()
+	mw.redraw <- true
+	gdk.ThreadsEnter()
 }
 
 func (mw *MapWidget) drawBg() {
@@ -256,6 +272,15 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 		mw.mx2, mw.my2 = int(mev.X), int(mev.Y)
 	}
 
+	x := (mw.offX + mw.mx2) / zoom
+	z := (mw.offZ + mw.my2) / zoom
+	cx, cz, cbx, cbz := mcmap.BlockToChunk(x, z)
+	bio := mcmap.Biome(mcmap.BioUncalculated)
+	if bc, ok := mw.bioCache[XZPos{cx, cz}]; ok {
+		bio = bc[cbz*mcmap.ChunkSizeXZ+cbx]
+	}
+	mw.updateInfo(x, z, bio)
+
 	switch {
 	case mt&gdk.BUTTON1_MASK != 0:
 	case mt&gdk.BUTTON2_MASK != 0:
@@ -292,6 +317,7 @@ func (mw *MapWidget) init() {
 
 	mw.maptiles = make(map[XZPos]*gdk.Pixmap)
 	mw.biotiles = make(map[XZPos]*gdk.Pixmap)
+	mw.bioCache = make(map[XZPos][]mcmap.Biome)
 
 	mw.showBiomes = true
 
@@ -314,8 +340,8 @@ func (mw *MapWidget) setRegion(region *mcmap.Region) {
 	mw.tileCmds <- cmdUpdateTiles
 }
 
-func NewMapWidget(reportFail func(msg string)) *MapWidget {
-	mw := &MapWidget{reportFail: reportFail}
+func NewMapWidget(reportFail func(msg string), updateInfo func(x, z int, bio mcmap.Biome)) *MapWidget {
+	mw := &MapWidget{reportFail: reportFail, updateInfo: updateInfo}
 	mw.init()
 	return mw
 }
