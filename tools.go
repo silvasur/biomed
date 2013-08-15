@@ -4,19 +4,18 @@ import (
 	"github.com/kch42/gomcmap/mcmap"
 )
 
-type BiomeGetter interface {
+type BiomeGetSetter interface {
 	GetBiome(x, z int) (mcmap.Biome, bool)
+	SetBiome(x, z int, bio mcmap.Biome)
 }
 
 type XZPos struct {
 	X, Z int
 }
 
-type Change map[XZPos]mcmap.Biome
-
 type Tool interface {
 	SingleClick() bool // Whether only one click should be performed (true) or the action should be repeated, if the mouse is dragged
-	Do(bio mcmap.Biome, bioget BiomeGetter, x, z int) Change
+	Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int)
 }
 
 type drawTool struct {
@@ -25,20 +24,17 @@ type drawTool struct {
 
 func (d *drawTool) SingleClick() bool { return false }
 
-func (d *drawTool) Do(bio mcmap.Biome, bioget BiomeGetter, x, z int) Change {
+func (d *drawTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
 	rad := d.radGetter()
 	if rad <= 0 {
-		return nil
+		return
 	}
 
-	change := make(Change)
 	for xp := x - (rad - 1); xp < x+rad; xp++ {
 		for zp := z - (rad - 1); zp < z+rad; zp++ {
-			change[XZPos{xp, zp}] = bio
+			biogs.SetBiome(xp, zp, bio)
 		}
 	}
-
-	return change
 }
 
 func NewDrawTool(radGetter func() int) *drawTool {
@@ -49,30 +45,20 @@ type fillTool struct{}
 
 func (f *fillTool) SingleClick() bool { return true }
 
-func (f *fillTool) Do(bio mcmap.Biome, bioget BiomeGetter, x, z int) Change {
-	oldbio, ok := bioget.GetBiome(x, z)
-	if !ok {
-		return nil
+func (f *fillTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
+	if oldbio, ok := biogs.GetBiome(x, z); ok {
+		floodfill(oldbio, bio, biogs, x, z)
 	}
-
-	change := make(Change)
-	floodfill(oldbio, bio, bioget, x, z, change)
-	return change
 }
 
-func floodfill(oldbio, newbio mcmap.Biome, bioget BiomeGetter, x, z int, change Change) {
-	pos := XZPos{x, z}
-	if _, ok := change[pos]; ok {
-		return
-	}
+func floodfill(oldbio, newbio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
+	if bio, ok := biogs.GetBiome(x, z); ok && (bio == oldbio) {
+		biogs.SetBiome(x, z, newbio)
 
-	if bio, ok := bioget.GetBiome(x, z); ok && (bio == oldbio) {
-		change[pos] = newbio
-
-		floodfill(oldbio, newbio, bioget, x-1, z, change)
-		floodfill(oldbio, newbio, bioget, x+1, z, change)
-		floodfill(oldbio, newbio, bioget, x, z-1, change)
-		floodfill(oldbio, newbio, bioget, x, z+1, change)
+		floodfill(oldbio, newbio, biogs, x-1, z)
+		floodfill(oldbio, newbio, biogs, x+1, z)
+		floodfill(oldbio, newbio, biogs, x, z-1)
+		floodfill(oldbio, newbio, biogs, x, z+1)
 	}
 }
 

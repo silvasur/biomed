@@ -95,7 +95,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	fileMenuItem.SetSubmenu(fileMenu)
 	menubar.Append(fileMenuItem)
 
-	editMenu := gtk.NewMenu()
+	/*editMenu := gtk.NewMenu()
 
 	undo := gtk.NewMenuItemWithLabel("Undo")
 	undo.Connect("activate", g.undo)
@@ -103,7 +103,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 
 	editMenuItem := gtk.NewMenuItemWithLabel("Edit")
 	editMenuItem.SetSubmenu(editMenu)
-	menubar.Append(editMenuItem)
+	menubar.Append(editMenuItem)*/
 
 	helpMenu := gtk.NewMenu()
 
@@ -256,9 +256,9 @@ func (g *GUI) showbiomesToggled() {
 	g.mapw.SetShowBiomes(g.showbiomes.GetActive())
 }
 
-func (g *GUI) undo() {
+/*func (g *GUI) undo() {
 	fmt.Println("Undo")
-}
+}*/
 
 func (g *GUI) Show() {
 	g.window.ShowAll()
