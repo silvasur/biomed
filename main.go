@@ -3,14 +3,18 @@ package main
 import (
 	"fmt"
 	"github.com/kch42/gomcmap/mcmap"
+	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
+	"os"
 )
 
 type GUI struct {
 	window     *gtk.Window
 	statusbar  *gtk.Statusbar
 	showbiomes *gtk.CheckButton
+
+	mapw *MapWidget
 
 	tool Tool
 }
@@ -24,7 +28,14 @@ func (g *GUI) openWorldDlg() {
 }
 
 func (g *GUI) openWorld(path string) {
-	fmt.Println(path)
+	region, err := mcmap.OpenRegion(path, false)
+	if err != nil {
+		dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_WARNING, gtk.BUTTONS_OK, "Could not load world %s:\n%s", path, err.Error())
+		dlg.Run()
+		dlg.Destroy()
+	}
+
+	go g.mapw.setRegion(region)
 }
 
 func (g *GUI) aboutDlg() {
@@ -185,7 +196,8 @@ func (g *GUI) Init() {
 
 	hbox := gtk.NewHBox(false, 0)
 
-	// TODO: Drawing area thing missing...
+	g.mapw = NewMapWidget(g.reportError)
+	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
 	toolbox := g.mkToolbox()
 	hbox.PackEnd(toolbox, false, false, 3)
@@ -199,6 +211,13 @@ func (g *GUI) Init() {
 	g.window.SetDefaultSize(800, 600)
 
 	g.window.Connect("destroy", g.exitApp)
+}
+
+func (g *GUI) reportError(msg string) {
+	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
+	dlg.Run()
+	dlg.Destroy()
+	os.Exit(1)
 }
 
 func (g *GUI) mkUpdateToolFx(rb *gtk.RadioButton, t Tool) func() {
@@ -226,7 +245,7 @@ func (g *GUI) setBiome(bio mcmap.Biome) {
 }
 
 func (g *GUI) showbiomesToggled() {
-	fmt.Printf("Show biomes: %v\n", g.showbiomes.GetActive())
+	g.mapw.SetShowBiomes(g.showbiomes.GetActive())
 }
 
 func (g *GUI) undo() {
@@ -242,6 +261,9 @@ func (g *GUI) exitApp() {
 }
 
 func main() {
+	glib.ThreadInit(nil)
+	gdk.ThreadsInit()
+	gdk.ThreadsEnter()
 	gtk.Init(nil)
 
 	gui := new(GUI)
@@ -249,4 +271,5 @@ func main() {
 	gui.Show()
 
 	gtk.Main()
+	gdk.ThreadsLeave()
 }
