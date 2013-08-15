@@ -223,8 +223,8 @@ func (mw *MapWidget) drawBg() {
 	drawable := mw.bg.GetDrawable()
 	gc := gdk.NewGC(drawable)
 
-	w := (mw.w + 16) / 32
-	h := (mw.h + 16) / 32
+	w := int(math.Ceil(float64(mw.w) / 32))
+	h := int(math.Ceil(float64(mw.h) / 32))
 
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
