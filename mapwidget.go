@@ -14,6 +14,7 @@ const (
 	zoom          = 2
 	tileSize      = zoom * mcmap.ChunkSizeXZ
 	halfChunkSize = mcmap.ChunkSizeXZ / 2
+	cacheSize     = 4
 )
 
 type tileCmd int
@@ -73,8 +74,9 @@ type MapWidget struct {
 
 	showBiomes bool
 
-	offX, offZ         int
-	mx1, mx2, my1, my2 int
+	offX, offZ                 int
+	mx1, mx2, my1, my2         int
+	primMButton, middleMButton bool
 
 	pixmap   *gdk.Pixmap
 	pixmapGC *gdk.GC
@@ -82,7 +84,7 @@ type MapWidget struct {
 
 	bg *gdk.Pixmap
 
-	region *mcmap.Region
+	region *CachedRegion
 
 	maptiles map[XZPos]*gdk.Pixmap
 	biotiles map[XZPos]*gdk.Pixmap
@@ -92,6 +94,7 @@ type MapWidget struct {
 	tileCmds chan tileCmd
 
 	tool Tool
+	bio  mcmap.Biome
 }
 
 var (
@@ -122,8 +125,20 @@ func (mw *MapWidget) doTileCmds() {
 	for cmd := range mw.tileCmds {
 		switch cmd {
 		case cmdSave:
-			mw.region.Save()
+			if err := mw.region.Flush(); err != nil {
+				mw.reportFail(fmt.Sprintf("Error while flushing cache: %s", err))
+				return
+			}
+			if err := mw.region.Region.Save(); err != nil {
+				mw.reportFail(fmt.Sprintf("Error while saving: %s", err))
+				return
+			}
 		case cmdFlushTiles:
+			if err := mw.region.Flush(); err != nil {
+				mw.reportFail(fmt.Sprintf("Error while flushing cache: %s", err))
+				return
+			}
+
 			gdk.ThreadsEnter()
 			for _, mt := range mw.maptiles {
 				mt.Unref()
@@ -293,9 +308,7 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 	}
 	mw.updateInfo(x, z, bio)
 
-	switch {
-	case mt&gdk.BUTTON1_MASK != 0:
-	case mt&gdk.BUTTON2_MASK != 0:
+	if mw.middleMButton {
 		if (mw.mx1 != -1) && (mw.my1 != -1) {
 			mw.offX += mw.mx1 - mw.mx2
 			mw.offZ += mw.my1 - mw.my2
@@ -306,7 +319,45 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 		}
 	}
 
+	if mw.primMButton {
+		mw.tool.Do(mw.bio, mw, x, z)
+
+		gdk.ThreadsLeave()
+		mw.redraw <- true
+		gdk.ThreadsEnter()
+	}
+
 	mw.mx1, mw.my1 = mw.mx2, mw.my2
+}
+
+func (mw *MapWidget) buttonChanged(ctx *glib.CallbackContext) {
+	arg := ctx.Args(0)
+	bev := *(**gdk.EventButton)(unsafe.Pointer(&arg))
+
+	switch gdk.EventType(bev.Type) {
+	case gdk.BUTTON_RELEASE:
+		mw.primMButton, mw.middleMButton = false, false
+	case gdk.BUTTON_PRESS:
+		switch bev.Button {
+		case 1:
+			if mw.region == nil {
+				return
+			}
+			x := (mw.offX + int(bev.X)) / zoom
+			z := (mw.offZ + int(bev.Y)) / zoom
+			mw.tool.Do(mw.bio, mw, x, z)
+
+			gdk.ThreadsLeave()
+			mw.redraw <- true
+			gdk.ThreadsEnter()
+
+			if !mw.tool.SingleClick() {
+				mw.primMButton = true
+			}
+		case 2:
+			mw.middleMButton = true
+		}
+	}
 }
 
 func (mw *MapWidget) expose() {
@@ -342,17 +393,19 @@ func (mw *MapWidget) init() {
 	mw.dArea.Connect("configure-event", mw.configure)
 	mw.dArea.Connect("expose-event", mw.expose)
 	mw.dArea.Connect("motion-notify-event", mw.movement)
+	mw.dArea.Connect("button-press-event", mw.buttonChanged)
+	mw.dArea.Connect("button-release-event", mw.buttonChanged)
 
-	mw.dArea.SetEvents(int(gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK | gdk.BUTTON_PRESS_MASK))
+	mw.dArea.SetEvents(int(gdk.POINTER_MOTION_MASK | gdk.POINTER_MOTION_HINT_MASK | gdk.BUTTON_PRESS_MASK | gdk.BUTTON_RELEASE_MASK))
 }
 
 func (mw *MapWidget) setRegion(region *mcmap.Region) {
 	mw.tileCmds <- cmdFlushTiles
-	mw.region = region
+	mw.region = NewCachedRegion(region, cacheSize)
 	mw.tileCmds <- cmdUpdateTiles
 }
 
-func (mw *MapWidget) GetBiome(x, z int) (mcmap.Biome, bool) {
+func (mw *MapWidget) GetBiomeAt(x, z int) (mcmap.Biome, bool) {
 	cx, cz, bx, bz := mcmap.BlockToChunk(x, z)
 	pos := XZPos{cx, cz}
 
@@ -360,7 +413,7 @@ func (mw *MapWidget) GetBiome(x, z int) (mcmap.Biome, bool) {
 		return bc[bz*mcmap.ChunkSizeXZ+bx], true
 	}
 
-	chunk, err := mw.region.Chunk(x, z)
+	chunk, err := mw.region.Chunk(cx, cz)
 	switch err {
 	case nil:
 	case mcmap.NotAvailable:
@@ -369,7 +422,6 @@ func (mw *MapWidget) GetBiome(x, z int) (mcmap.Biome, bool) {
 		mw.reportFail(fmt.Sprintf("Error while getting chunk %d, %d: %s", cx, cz, err))
 		return mcmap.BioUncalculated, false
 	}
-	defer chunk.MarkUnused()
 
 	bc := make([]mcmap.Biome, mcmap.ChunkRectXZ)
 	i := 0
@@ -384,16 +436,11 @@ func (mw *MapWidget) GetBiome(x, z int) (mcmap.Biome, bool) {
 	return chunk.Biome(bx, bz), true
 }
 
-func (mw *MapWidget) SetBiome(x, z int, bio mcmap.Biome) {
+func (mw *MapWidget) SetBiomeAt(x, z int, bio mcmap.Biome) {
 	cx, cz, bx, bz := mcmap.BlockToChunk(x, z)
 	pos := XZPos{cx, cz}
 
-	// Update cache
-	if bc, ok := mw.bioCache[pos]; ok {
-		bc[bz*mcmap.ChunkSizeXZ+bx] = bio
-	}
-
-	chunk, err := mw.region.Chunk(x, z)
+	chunk, err := mw.region.Chunk(cx, cz)
 	switch err {
 	case nil:
 	case mcmap.NotAvailable:
@@ -402,9 +449,22 @@ func (mw *MapWidget) SetBiome(x, z int, bio mcmap.Biome) {
 		mw.reportFail(fmt.Sprintf("Error while getting chunk %d, %d: %s", cx, cz, err))
 		return
 	}
-	defer chunk.MarkUnused()
 
 	chunk.SetBiome(bx, bz, bio)
+	chunk.MarkModified()
+
+	// Update cache
+	if bc, ok := mw.bioCache[pos]; ok {
+		bc[bz*mcmap.ChunkSizeXZ+bx] = bio
+	}
+
+	// Update tile
+	if tile, ok := mw.biotiles[pos]; ok {
+		drawable := tile.GetDrawable()
+		gc := gdk.NewGC(drawable)
+		gc.SetRgbFgColor(bioColors[bio])
+		drawable.DrawRectangle(gc, true, bx*zoom, bz*zoom, zoom, zoom)
+	}
 }
 
 func NewMapWidget(reportFail func(msg string), updateInfo func(x, z int, bio mcmap.Biome)) *MapWidget {
