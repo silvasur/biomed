@@ -11,10 +11,9 @@ import (
 )
 
 const (
-	zoom          = 2
-	tileSize      = zoom * mcmap.ChunkSizeXZ
-	halfChunkSize = mcmap.ChunkSizeXZ / 2
-	cacheSize     = 4
+	zoom      = 2
+	tileSize  = zoom * mcmap.ChunkSizeXZ
+	cacheSize = 4
 )
 
 type tileCmd int
