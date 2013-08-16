@@ -45,20 +45,78 @@ type fillTool struct{}
 
 func (f *fillTool) SingleClick() bool { return true }
 
-func (f *fillTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
-	if oldbio, ok := biogs.GetBiomeAt(x, z); ok {
-		floodfill(oldbio, bio, biogs, x, z)
-	}
+func chkBounds(x, z, xStart, zStart, xEnd, zEnd int) bool {
+	return (x >= xStart) && (z >= zStart) && (x < xEnd) && (z < zEnd)
 }
 
-func floodfill(oldbio, newbio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
-	if bio, ok := biogs.GetBiomeAt(x, z); ok && (bio == oldbio) {
-		biogs.SetBiomeAt(x, z, newbio)
+func (f *fillTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
+	oldbio, ok := biogs.GetBiomeAt(x, z)
+	if !ok {
+		return
+	}
 
-		floodfill(oldbio, newbio, biogs, x-1, z)
-		floodfill(oldbio, newbio, biogs, x+1, z)
-		floodfill(oldbio, newbio, biogs, x, z-1)
-		floodfill(oldbio, newbio, biogs, x, z+1)
+	inChunkQueue := []XZPos{}
+	outOfChunkQueue := []XZPos{{x, z}}
+
+	for {
+		oocqL := len(outOfChunkQueue) - 1
+		if oocqL < 0 {
+			break
+		}
+
+		pos := outOfChunkQueue[oocqL]
+		inChunkQueue = []XZPos{pos}
+		outOfChunkQueue = outOfChunkQueue[:oocqL]
+
+		cx, cz, _, _ := mcmap.BlockToChunk(pos.X, pos.Z)
+		xStart := cx * mcmap.ChunkSizeXZ
+		zStart := cz * mcmap.ChunkSizeXZ
+		xEnd := xStart + mcmap.ChunkSizeXZ
+		zEnd := zStart + mcmap.ChunkSizeXZ
+
+		for {
+			icqL := len(inChunkQueue) - 1
+			if icqL < 0 {
+				break
+			}
+
+			pos := inChunkQueue[icqL]
+			inChunkQueue = inChunkQueue[:icqL]
+
+			px, pz := pos.X, pos.Z
+
+			if haveBio, ok := biogs.GetBiomeAt(px, pz); ok && (haveBio == oldbio) {
+				biogs.SetBiomeAt(px, pz, bio)
+
+				nx, nz := px+1, pz
+				if chkBounds(nx, nz, xStart, zStart, xEnd, zEnd) {
+					inChunkQueue = append(inChunkQueue, XZPos{nx, nz})
+				} else {
+					outOfChunkQueue = append(outOfChunkQueue, XZPos{nx, nz})
+				}
+
+				nx, nz = px-1, pz
+				if chkBounds(nx, nz, xStart, zStart, xEnd, zEnd) {
+					inChunkQueue = append(inChunkQueue, XZPos{nx, nz})
+				} else {
+					outOfChunkQueue = append(outOfChunkQueue, XZPos{nx, nz})
+				}
+
+				nx, nz = px, pz+1
+				if chkBounds(nx, nz, xStart, zStart, xEnd, zEnd) {
+					inChunkQueue = append(inChunkQueue, XZPos{nx, nz})
+				} else {
+					outOfChunkQueue = append(outOfChunkQueue, XZPos{nx, nz})
+				}
+
+				nx, nz = px, pz-1
+				if chkBounds(nx, nz, xStart, zStart, xEnd, zEnd) {
+					inChunkQueue = append(inChunkQueue, XZPos{nx, nz})
+				} else {
+					outOfChunkQueue = append(outOfChunkQueue, XZPos{nx, nz})
+				}
+			}
+		}
 	}
 }
 
