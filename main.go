@@ -249,7 +249,7 @@ func (g *GUI) setTool(t Tool) {
 }
 
 func (g *GUI) setBiome(bio mcmap.Biome) {
-	fmt.Println(bio)
+	g.mapw.SetBiome(bio)
 }
 
 func (g *GUI) showbiomesToggled() {

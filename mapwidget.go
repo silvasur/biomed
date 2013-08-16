@@ -112,6 +112,10 @@ func (mw *MapWidget) SetTool(t Tool) {
 	mw.tool = t
 }
 
+func (mw *MapWidget) SetBiome(bio mcmap.Biome) {
+	mw.bio = bio
+}
+
 func (mw *MapWidget) DArea() *gtk.DrawingArea { return mw.dArea }
 
 func (mw *MapWidget) doTileCmds() {

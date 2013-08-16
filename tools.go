@@ -5,8 +5,8 @@ import (
 )
 
 type BiomeGetSetter interface {
-	GetBiome(x, z int) (mcmap.Biome, bool)
-	SetBiome(x, z int, bio mcmap.Biome)
+	GetBiomeAt(x, z int) (mcmap.Biome, bool)
+	SetBiomeAt(x, z int, bio mcmap.Biome)
 }
 
 type XZPos struct {
@@ -32,7 +32,7 @@ func (d *drawTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
 
 	for xp := x - (rad - 1); xp < x+rad; xp++ {
 		for zp := z - (rad - 1); zp < z+rad; zp++ {
-			biogs.SetBiome(xp, zp, bio)
+			biogs.SetBiomeAt(xp, zp, bio)
 		}
 	}
 }
@@ -46,14 +46,14 @@ type fillTool struct{}
 func (f *fillTool) SingleClick() bool { return true }
 
 func (f *fillTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
-	if oldbio, ok := biogs.GetBiome(x, z); ok {
+	if oldbio, ok := biogs.GetBiomeAt(x, z); ok {
 		floodfill(oldbio, bio, biogs, x, z)
 	}
 }
 
 func floodfill(oldbio, newbio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
-	if bio, ok := biogs.GetBiome(x, z); ok && (bio == oldbio) {
-		biogs.SetBiome(x, z, newbio)
+	if bio, ok := biogs.GetBiomeAt(x, z); ok && (bio == oldbio) {
+		biogs.SetBiomeAt(x, z, newbio)
 
 		floodfill(oldbio, newbio, biogs, x-1, z)
 		floodfill(oldbio, newbio, biogs, x+1, z)
