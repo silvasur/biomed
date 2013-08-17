@@ -73,9 +73,9 @@ type MapWidget struct {
 
 	showBiomes bool
 
-	offX, offZ                 int
-	mx1, mx2, my1, my2         int
-	primMButton, middleMButton bool
+	offX, offZ            int
+	mx1, mx2, my1, my2    int
+	continueTool, panning bool
 
 	pixmap   *gdk.Pixmap
 	pixmapGC *gdk.GC
@@ -285,6 +285,10 @@ func (mw *MapWidget) compose() {
 	}
 }
 
+func (mw *MapWidget) useTool(x, z int) {
+	mw.tool.Do(mw.bio, mw, x, z)
+}
+
 func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 	if mw.gdkwin == nil {
 		mw.gdkwin = mw.dArea.GetWindow()
@@ -307,19 +311,19 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 	}
 	mw.updateInfo(x, z, bio)
 
-	if mw.middleMButton {
+	if mw.panning {
 		if (mw.mx1 != -1) && (mw.my1 != -1) {
 			mw.offX += mw.mx1 - mw.mx2
 			mw.offZ += mw.my1 - mw.my2
 
 			gdk.ThreadsLeave()
-			mw.tileCmds <- cmdUpdateTiles
+			mw.redraw <- true
 			gdk.ThreadsEnter()
 		}
 	}
 
-	if mw.primMButton {
-		mw.tool.Do(mw.bio, mw, x, z)
+	if mw.continueTool {
+		mw.useTool(x, z)
 
 		gdk.ThreadsLeave()
 		mw.redraw <- true
@@ -339,7 +343,15 @@ func (mw *MapWidget) buttonChanged(ctx *glib.CallbackContext) {
 
 	switch gdk.EventType(bev.Type) {
 	case gdk.BUTTON_RELEASE:
-		mw.primMButton, mw.middleMButton = false, false
+		if mw.panning {
+			mw.panning = false
+
+			gdk.ThreadsLeave()
+			mw.tileCmds <- cmdUpdateTiles
+			gdk.ThreadsEnter()
+		}
+
+		mw.continueTool = false
 	case gdk.BUTTON_PRESS:
 		switch bev.Button {
 		case 1:
@@ -348,17 +360,17 @@ func (mw *MapWidget) buttonChanged(ctx *glib.CallbackContext) {
 			}
 			x := (mw.offX + int(bev.X)) / zoom
 			z := (mw.offZ + int(bev.Y)) / zoom
-			mw.tool.Do(mw.bio, mw, x, z)
+			mw.useTool(x, z)
 
 			gdk.ThreadsLeave()
 			mw.redraw <- true
 			gdk.ThreadsEnter()
 
 			if !mw.tool.SingleClick() {
-				mw.primMButton = true
+				mw.continueTool = true
 			}
 		case 2:
-			mw.middleMButton = true
+			mw.panning = true
 		}
 	}
 }
