@@ -83,6 +83,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	}
 
 	save := gtk.NewMenuItemWithLabel("Save")
+	save.Connect("activate", g.save)
 	fileMenu.Append(save)
 
 	quit := gtk.NewMenuItemWithLabel("Quit")
@@ -114,6 +115,10 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	menubar.Append(helpMenuItem)
 
 	return menubar
+}
+
+func (g *GUI) save() {
+	g.mapw.Save()
 }
 
 func (g *GUI) mkQuickOpen() (*gtk.Menu, bool) {

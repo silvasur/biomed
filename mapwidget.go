@@ -329,6 +329,10 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 	mw.mx1, mw.my1 = mw.mx2, mw.my2
 }
 
+func (mw *MapWidget) Save() {
+	mw.tileCmds <- cmdSave
+}
+
 func (mw *MapWidget) buttonChanged(ctx *glib.CallbackContext) {
 	arg := ctx.Args(0)
 	bev := *(**gdk.EventButton)(unsafe.Pointer(&arg))
