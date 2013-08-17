@@ -144,7 +144,7 @@ func labelCustomFont(text, font string) *gtk.Label {
 	return label
 }
 
-func (g *GUI) mkToolbox() *gtk.ScrolledWindow {
+func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	vbox := gtk.NewVBox(false, 0)
 
 	vbox.PackStart(labelCustomFont("Tools", "Sans Bold 14"), false, false, 3)
@@ -204,8 +204,8 @@ func (g *GUI) Init() {
 	g.mapw = NewMapWidget(g.reportError, g.updateInfo)
 	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
-	toolbox := g.mkToolbox()
-	hbox.PackEnd(toolbox, false, false, 3)
+	sidebar := g.mkSidebar()
+	hbox.PackEnd(sidebar, false, false, 3)
 
 	vbox.PackStart(hbox, true, true, 0)
 
