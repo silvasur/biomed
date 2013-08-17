@@ -15,6 +15,7 @@ type GUI struct {
 	showbiomes *gtk.CheckButton
 
 	statusContext uint
+	lastStatus    string
 
 	mapw *MapWidget
 }
@@ -201,7 +202,7 @@ func (g *GUI) Init() {
 
 	hbox := gtk.NewHBox(false, 0)
 
-	g.mapw = NewMapWidget(g.reportError, g.updateInfo)
+	g.mapw = NewMapWidget(g.reportError, g.updateInfo, g.setBusy)
 	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
 	sidebar := g.mkSidebar()
@@ -221,6 +222,17 @@ func (g *GUI) Init() {
 	g.setTool(NewFillTool())
 }
 
+func (g *GUI) setBusy(b bool) {
+	g.window.SetSensitive(!b)
+	g.statusbar.Pop(g.statusContext)
+	if b {
+		g.statusbar.Push(g.statusContext, "!!! PLEASE WAIT !!!")
+
+	} else {
+		g.statusbar.Push(g.statusContext, g.lastStatus)
+	}
+}
+
 func (g *GUI) reportError(msg string) {
 	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg)
 	dlg.Run()
@@ -229,8 +241,9 @@ func (g *GUI) reportError(msg string) {
 }
 
 func (g *GUI) updateInfo(x, z int, bio mcmap.Biome) {
+	g.lastStatus = fmt.Sprintf("X:%d, Z:%d, Biome:%s", x, z, bio)
 	g.statusbar.Pop(g.statusContext)
-	g.statusbar.Push(g.statusContext, fmt.Sprintf("X:%d, Z:%d, Biome:%s", x, z, bio))
+	g.statusbar.Push(g.statusContext, g.lastStatus)
 }
 
 func (g *GUI) mkUpdateToolFx(rb *gtk.RadioButton, t Tool) func() {

@@ -15,6 +15,7 @@ type XZPos struct {
 
 type Tool interface {
 	SingleClick() bool // Whether only one click should be performed (true) or the action should be repeated, if the mouse is dragged
+	IsSlow() bool
 	Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int)
 }
 
@@ -23,6 +24,7 @@ type drawTool struct {
 }
 
 func (d *drawTool) SingleClick() bool { return false }
+func (d *drawTool) IsSlow() bool      { return false }
 
 func (d *drawTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
 	rad := d.radGetter()
@@ -44,6 +46,7 @@ func NewDrawTool(radGetter func() int) *drawTool {
 type fillTool struct{}
 
 func (f *fillTool) SingleClick() bool { return true }
+func (f *fillTool) IsSlow() bool      { return true }
 
 func chkBounds(x, z, xStart, zStart, xEnd, zEnd int) bool {
 	return (x >= xStart) && (z >= zStart) && (x < xEnd) && (z < zEnd)

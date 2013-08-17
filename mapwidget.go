@@ -68,6 +68,9 @@ type MapWidget struct {
 
 	reportFail func(msg string)
 	updateInfo func(x, z int, bio mcmap.Biome)
+	setBusy    func(bool)
+
+	toolsEnabled bool
 
 	isInit bool
 
@@ -286,7 +289,27 @@ func (mw *MapWidget) compose() {
 }
 
 func (mw *MapWidget) useTool(x, z int) {
-	mw.tool.Do(mw.bio, mw, x, z)
+	gdk.ThreadsLeave()
+	defer gdk.ThreadsEnter()
+
+	if !mw.toolsEnabled {
+		return
+	}
+
+	if mw.tool.IsSlow() {
+		mw.toolsEnabled = false
+		mw.setBusy(true)
+
+		go func() {
+			mw.tool.Do(mw.bio, mw, x, z)
+			mw.setBusy(false)
+			mw.toolsEnabled = true
+
+			mw.redraw <- true
+		}()
+	} else {
+		mw.tool.Do(mw.bio, mw, x, z)
+	}
 }
 
 func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
@@ -475,15 +498,17 @@ func (mw *MapWidget) SetBiomeAt(x, z int, bio mcmap.Biome) {
 
 	// Update tile
 	if tile, ok := mw.biotiles[pos]; ok {
+		gdk.ThreadsEnter()
 		drawable := tile.GetDrawable()
 		gc := gdk.NewGC(drawable)
 		gc.SetRgbFgColor(bioColors[bio])
 		drawable.DrawRectangle(gc, true, bx*zoom, bz*zoom, zoom, zoom)
+		gdk.ThreadsLeave()
 	}
 }
 
-func NewMapWidget(reportFail func(msg string), updateInfo func(x, z int, bio mcmap.Biome)) *MapWidget {
-	mw := &MapWidget{reportFail: reportFail, updateInfo: updateInfo}
+func NewMapWidget(reportFail func(msg string), updateInfo func(x, z int, bio mcmap.Biome), setBusy func(bool)) *MapWidget {
+	mw := &MapWidget{reportFail: reportFail, updateInfo: updateInfo, setBusy: setBusy, toolsEnabled: true}
 	mw.init()
 	return mw
 }
