@@ -44,7 +44,7 @@ func (g *GUI) openWorld(path string) {
 func (g *GUI) aboutDlg() {
 	dlg := gtk.NewAboutDialog()
 	dlg.SetName("biome-editor")
-	dlg.SetVersion("α")
+	dlg.SetVersion("β")
 	dlg.SetCopyright("© 2013 by Kevin Chabowski")
 	dlg.SetAuthors([]string{"Kevin Chabowski <kevin@kch42.de>"})
 	dlg.SetLicense(`Copyright (c) 2013 Kevin Chabowski
