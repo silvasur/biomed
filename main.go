@@ -161,7 +161,7 @@ func (g *GUI) mkToolbox() *gtk.ScrolledWindow {
 	draw := gtk.NewRadioButtonWithLabel(fill.GetGroup(), "Draw")
 	drawRadius := gtk.NewSpinButtonWithRange(1, 20, 1)
 	drawHBox := gtk.NewHBox(false, 0)
-	drawHBox.PackStart(draw, true, true, 3)
+	drawHBox.PackStart(draw, true, true, 0)
 	drawHBox.PackStart(gtk.NewLabel("Radius:"), false, false, 3)
 	drawHBox.PackEnd(drawRadius, false, false, 3)
 	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return int(drawRadius.GetValue()) })))
@@ -197,7 +197,7 @@ func (g *GUI) Init() {
 
 	menubar := g.mkMenuBar()
 	vbox := gtk.NewVBox(false, 0)
-	vbox.PackStart(menubar, false, false, 3)
+	vbox.PackStart(menubar, false, false, 0)
 
 	hbox := gtk.NewHBox(false, 0)
 
@@ -207,11 +207,11 @@ func (g *GUI) Init() {
 	toolbox := g.mkToolbox()
 	hbox.PackEnd(toolbox, false, false, 3)
 
-	vbox.PackStart(hbox, true, true, 3)
+	vbox.PackStart(hbox, true, true, 0)
 
 	g.statusbar = gtk.NewStatusbar()
 	g.statusContext = g.statusbar.GetContextId("mapinfo")
-	vbox.PackEnd(g.statusbar, false, false, 3)
+	vbox.PackEnd(g.statusbar, false, false, 0)
 
 	g.window.Add(vbox)
 	g.window.SetDefaultSize(800, 600)
