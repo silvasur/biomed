@@ -74,7 +74,7 @@ type MapWidget struct {
 
 	isInit bool
 
-	showBiomes bool
+	showBiomes, fixSnowIce bool
 
 	offX, offZ            int
 	mx1, mx2, my1, my2    int
@@ -111,6 +111,10 @@ func emptyPixmap(w, h, depth int) *gdk.Pixmap {
 func (mw *MapWidget) SetShowBiomes(b bool) {
 	mw.showBiomes = b
 	mw.redraw <- true
+}
+
+func (mw *MapWidget) SetFixSnowIce(b bool) {
+	mw.fixSnowIce = b
 }
 
 func (mw *MapWidget) SetTool(t Tool) {
@@ -489,6 +493,44 @@ func (mw *MapWidget) SetBiomeAt(x, z int, bio mcmap.Biome) {
 	}
 
 	chunk.SetBiome(bx, bz, bio)
+
+	var newcol *gdk.Color
+	if mw.fixSnowIce {
+		for y := chunk.Height(bx, bz); y >= 0; y-- {
+			if blk := chunk.Block(bx, y, bz); blk.ID != mcmap.BlkAir {
+				if coldBiome[bio] {
+					if (blk.ID == mcmap.BlkStationaryWater) || (blk.ID == mcmap.BlkWater) {
+						blk.ID = mcmap.BlkIce
+						newcol = blockColors[mcmap.BlkIce]
+					} else if blockCanSnowIn[blk.ID] {
+						if yFix := y + 1; yFix < mcmap.ChunkSizeY {
+							blkFix := chunk.Block(bx, yFix, bz)
+							blkFix.ID = mcmap.BlkSnow
+							blkFix.Data = 0x0
+							newcol = blockColors[mcmap.BlkSnow]
+						}
+					}
+				} else {
+					if blk.ID == mcmap.BlkIce {
+						blk.ID = mcmap.BlkStationaryWater
+						blk.Data = 0x0
+						newcol = blockColors[mcmap.BlkStationaryWater]
+					} else if blk.ID == mcmap.BlkSnow {
+						blk.ID = mcmap.BlkAir
+						for y2 := y - 1; y2 >= 0; y2-- {
+							if col, ok := blockColors[chunk.Block(bx, y2, bz).ID]; ok {
+								newcol = col
+								break
+							}
+						}
+					}
+				}
+
+				break
+			}
+		}
+	}
+
 	chunk.MarkModified()
 
 	// Update cache
@@ -497,12 +539,21 @@ func (mw *MapWidget) SetBiomeAt(x, z int, bio mcmap.Biome) {
 	}
 
 	// Update tile
-	if tile, ok := mw.biotiles[pos]; ok {
+	if biotile, ok := mw.biotiles[pos]; ok {
 		gdk.ThreadsEnter()
-		drawable := tile.GetDrawable()
+
+		drawable := biotile.GetDrawable()
 		gc := gdk.NewGC(drawable)
 		gc.SetRgbFgColor(bioColors[bio])
 		drawable.DrawRectangle(gc, true, bx*zoom, bz*zoom, zoom, zoom)
+
+		if newcol != nil {
+			drawable = mw.maptiles[pos].GetDrawable()
+			gc = gdk.NewGC(drawable)
+			gc.SetRgbFgColor(newcol)
+			drawable.DrawRectangle(gc, true, bx*zoom, bz*zoom, zoom, zoom)
+		}
+
 		gdk.ThreadsLeave()
 	}
 }

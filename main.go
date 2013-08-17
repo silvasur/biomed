@@ -10,9 +10,11 @@ import (
 )
 
 type GUI struct {
-	window     *gtk.Window
-	statusbar  *gtk.Statusbar
+	window    *gtk.Window
+	statusbar *gtk.Statusbar
+
 	showbiomes *gtk.CheckButton
+	fixsnowice *gtk.CheckButton
 
 	statusContext uint
 	lastStatus    string
@@ -155,6 +157,11 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	g.showbiomes.Connect("toggled", g.showbiomesToggled)
 	vbox.PackStart(g.showbiomes, false, false, 3)
 
+	g.fixsnowice = gtk.NewCheckButtonWithLabel("Fix Snow/Ice")
+	g.fixsnowice.SetTooltipText("Add Snow/Ice for Taiga/Ice Plains. Remove Snow/Ice for other biomes.")
+	g.fixsnowice.Connect("toggled", g.fixsnowiceToggled)
+	vbox.PackStart(g.fixsnowice, false, false, 3)
+
 	fill := gtk.NewRadioButtonWithLabel(nil, "Fill")
 	fill.SetActive(true)
 	fill.Connect("toggled", g.mkUpdateToolFx(fill, NewFillTool()))
@@ -272,6 +279,10 @@ func (g *GUI) setBiome(bio mcmap.Biome) {
 
 func (g *GUI) showbiomesToggled() {
 	g.mapw.SetShowBiomes(g.showbiomes.GetActive())
+}
+
+func (g *GUI) fixsnowiceToggled() {
+	g.mapw.SetFixSnowIce(g.fixsnowice.GetActive())
 }
 
 /*func (g *GUI) undo() {
