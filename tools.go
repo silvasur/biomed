@@ -54,7 +54,7 @@ func chkBounds(x, z, xStart, zStart, xEnd, zEnd int) bool {
 
 func (f *fillTool) Do(bio mcmap.Biome, biogs BiomeGetSetter, x, z int) {
 	oldbio, ok := biogs.GetBiomeAt(x, z)
-	if !ok {
+	if (!ok) || (oldbio == bio) {
 		return
 	}
 
