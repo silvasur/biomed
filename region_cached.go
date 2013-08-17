@@ -36,6 +36,8 @@ func (cr *CachedRegion) Chunk(x, z int) (*mcmap.Chunk, error) {
 					cr.cacheChunks[j] = cr.cacheChunks[j-1]
 					cr.cachePos[j] = cr.cachePos[j-1]
 				}
+				cr.cacheChunks[0] = chunk
+				cr.cachePos[0] = pos
 				return chunk, nil
 			}
 		}
