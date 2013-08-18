@@ -125,8 +125,20 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	return menubar
 }
 
+func (g *GUI) betaWarning() {
+	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "This software is currently in beta.\nAlthough everythung seems to work, you should make a backup of your maps, just in case!")
+	dlg.Run()
+	dlg.Destroy()
+}
+
 func (g *GUI) save() {
+	g.setBusy(true)
 	g.mapw.Save()
+	g.setBusy(false)
+
+	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "Map saved!")
+	dlg.Run()
+	dlg.Destroy()
 }
 
 func (g *GUI) mkQuickOpen() (*gtk.Menu, bool) {
@@ -296,6 +308,7 @@ func (g *GUI) fixSnowIceToggled() {
 
 func (g *GUI) Show() {
 	g.window.ShowAll()
+	g.betaWarning()
 }
 
 func (g *GUI) exitApp() {
