@@ -30,4 +30,4 @@ You need a recent version of GTK 2.x. If you are on Linux, you probably already
 
 You will need Go (1.1 or greater) and the development files for GTK 2.x.
 
-Then compiling is done by running: `go get github.com/kch42/biomed...`
+Then compiling is done by running: `go get github.com/kch42/biomed`
