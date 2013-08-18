@@ -114,6 +114,14 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 
 	helpMenu := gtk.NewMenu()
 
+	controls := gtk.NewMenuItemWithLabel("Controls")
+	controls.Connect("activate", func() {
+		dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "Click to use selected tool.\nMiddle mouse button to move around.")
+		dlg.Run()
+		dlg.Destroy()
+	})
+	helpMenu.Append(controls)
+
 	about := gtk.NewMenuItemWithLabel("About")
 	about.Connect("activate", g.aboutDlg)
 	helpMenu.Append(about)
