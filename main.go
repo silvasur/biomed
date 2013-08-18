@@ -38,7 +38,7 @@ func (g *GUI) openWorld(path string) {
 		dlg.Destroy()
 	}
 
-	go g.mapw.setRegion(region)
+	go g.mapw.SetRegion(region)
 }
 
 func (g *GUI) aboutDlg() {
@@ -209,7 +209,7 @@ func (g *GUI) Init() {
 
 	hbox := gtk.NewHBox(false, 0)
 
-	g.mapw = NewMapWidget(g.reportError, g.updateInfo, g.setBusy)
+	g.mapw = NewMapWidget(GUICallbacks{g.reportError, g.updateInfo, g.setBusy})
 	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
 	sidebar := g.mkSidebar()
