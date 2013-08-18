@@ -16,6 +16,8 @@ type GUI struct {
 	showbiomes *gtk.CheckButton
 	fixSnowIce *gtk.CheckButton
 
+	menuitemSave *gtk.MenuItem
+
 	statusContext uint
 	lastStatus    string
 
@@ -38,7 +40,9 @@ func (g *GUI) openWorld(path string) {
 		dlg.Destroy()
 	}
 
-	go g.mapw.SetRegion(region)
+	g.menuitemSave.SetSensitive(true)
+
+	g.mapw.SetRegion(region)
 }
 
 func (g *GUI) aboutDlg() {
@@ -85,9 +89,10 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 		fileMenu.Append(quickopenItem)
 	}
 
-	save := gtk.NewMenuItemWithLabel("Save")
-	save.Connect("activate", g.save)
-	fileMenu.Append(save)
+	g.menuitemSave = gtk.NewMenuItemWithLabel("Save")
+	g.menuitemSave.Connect("activate", g.save)
+	g.menuitemSave.SetSensitive(false)
+	fileMenu.Append(g.menuitemSave)
 
 	quit := gtk.NewMenuItemWithLabel("Quit")
 	quit.Connect("activate", g.exitApp)
