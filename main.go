@@ -47,7 +47,8 @@ func (g *GUI) openWorld(path string) {
 
 func (g *GUI) aboutDlg() {
 	dlg := gtk.NewAboutDialog()
-	dlg.SetName("biome-editor")
+	dlg.SetProgramName("biomed")
+	dlg.SetComments("A Minecraft Biome Editor")
 	dlg.SetVersion("β")
 	dlg.SetCopyright("© 2013 by Kevin Chabowski")
 	dlg.SetAuthors([]string{"Kevin Chabowski <kevin@kch42.de>"})
@@ -226,7 +227,7 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 
 func (g *GUI) Init() {
 	g.window = gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	g.window.SetTitle("Biome Editor")
+	g.window.SetTitle("biomed")
 
 	menubar := g.mkMenuBar()
 	vbox := gtk.NewVBox(false, 0)
