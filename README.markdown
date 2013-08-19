@@ -18,16 +18,35 @@ If you are done, click `File > Save`.
 
 ## WARNING
 
-Although everythung seems to work, please make a backup of your maps, just in case.
+Although everything seems to work, please make a backup of your maps, just in case.
+
+## Precompiled versions
+
+* Linux (64bit): [biomed-linux64.tar.bz2](http://kch42.de/progs/biomed/biomed-linux64.tar.bz2)
+* Windows (32bit, tested with Win8): [biomed-win32.zip](biomed-win32.zip)
 
 ## Dependencies / System Requirements
 
-biomed works good on Linux. It also should work on Windows and Mac OSX. I currently try to compile it for Windows. Since I do not own a Mac, I can't compile / test for OSX.
+You need a recent version of GTK 2.x. If you are on Linux, you probably already have it installed (if not, you should be able to find it in your package manager). For Windows you need the [GTK all in one bundle](http://ftp.gnome.org/pub/gnome/binaries/win32/gtk+/2.24/gtk+-bundle_2.24.10-20120208_win32.zip), unpack all `*.dll` files from the `bin` directory in the directory that contains `biomed.exe`.
 
-You need a recent version of GTK 2.x. If you are on Linux, you probably already 
+biomed works on Linux and Windows. It also should work on Mac OSX, but since I do not own a Mac, I can't test it.
 
 ## Compiling
 
-You will need Go (1.1 or greater) and the development files for GTK 2.x.
+### Linux
+
+You will need Go (1.1 or greater) and the development files for GTK 2.x. Both should be available from your package manager.
+
+Create a directory that contains the directories `bin`, `src` and `pkg` and set the `GOPATH` environment variable to that directory.
+
+Then compiling is done by running: `go get github.com/kch42/biomed`
+
+### Windows
+
+Install Go (1.1 or greater) from [golang.org](http://golang.org/doc/install).
+
+Create a directory that contains the directories `bin`, `src` and `pkg` and set the `GOPATH` environment variable to that directory.
+
+Follow these instructions for installing go-gtk: [http://stackoverflow.com/questions/16999498/how-to-set-up-gtk-for-go/17042596#17042596](http://stackoverflow.com/questions/16999498/how-to-set-up-gtk-for-go/17042596#17042596)
 
 Then compiling is done by running: `go get github.com/kch42/biomed`

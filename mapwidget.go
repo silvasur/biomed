@@ -41,8 +41,6 @@ type MapWidget struct {
 	bg *gdk.Pixmap
 
 	regWrap *RegionWrapper
-
-	redraw chan bool
 }
 
 func (mw *MapWidget) calcChunkRect() {
@@ -53,7 +51,7 @@ func (mw *MapWidget) DArea() *gtk.DrawingArea { return mw.dArea }
 
 func (mw *MapWidget) SetShowBiomes(b bool) {
 	mw.showBiomes = b
-	mw.redraw <- true
+	mw.updateGUI()
 }
 
 func (mw *MapWidget) SetFixSnowIce(b bool)           { mw.regWrap.SetFixSnowIce(b) }
@@ -98,18 +96,14 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 			mw.offX += mw.mx1 - mw.mx2
 			mw.offZ += mw.my1 - mw.my2
 
-			gdk.ThreadsLeave()
-			mw.redraw <- true
-			gdk.ThreadsEnter()
+			mw.updateGUI()
 		}
 	}
 
 	if mw.continueTool {
 		mw.regWrap.UseTool(x, z)
 
-		gdk.ThreadsLeave()
-		mw.redraw <- true
-		gdk.ThreadsEnter()
+		mw.updateGUI()
 	}
 
 	mw.mx1, mw.my1 = mw.mx2, mw.my2
@@ -142,9 +136,7 @@ func (mw *MapWidget) buttonChanged(ctx *glib.CallbackContext) {
 			z := (mw.offZ + int(bev.Y)) / zoom
 			mw.regWrap.UseTool(x, z)
 
-			gdk.ThreadsLeave()
-			mw.redraw <- true
-			gdk.ThreadsEnter()
+			mw.updateGUI()
 
 			if !mw.regWrap.ToolSingleClick() {
 				mw.continueTool = true
@@ -196,17 +188,16 @@ func (mw *MapWidget) configure() {
 	if !mw.isInit {
 		mw.offX = -(mw.w / 2)
 		mw.offZ = -(mw.h / 2)
-		mw.updateChunkBounds()
 		mw.isInit = true
 	}
+
+	mw.updateChunkBounds()
 
 	mw.pixmap = gdk.NewPixmap(mw.dArea.GetWindow().GetDrawable(), mw.w, mw.h, 24)
 	mw.pixmapGC = gdk.NewGC(mw.pixmap.GetDrawable())
 
 	mw.drawBg()
-	gdk.ThreadsLeave()
-	mw.redraw <- true
-	gdk.ThreadsEnter()
+	mw.updateGUI()
 }
 
 func (mw *MapWidget) compose() {
@@ -234,30 +225,24 @@ func (mw *MapWidget) expose() {
 	mw.dArea.GetWindow().GetDrawable().DrawDrawable(mw.pixmapGC, mw.pixmap.GetDrawable(), 0, 0, 0, 0, -1, -1)
 }
 
-func (mw *MapWidget) guiUpdater() {
-	for _ = range mw.redraw {
-		gdk.ThreadsEnter()
-		mw.compose()
-		mw.expose()
-		mw.dArea.GetWindow().Invalidate(nil, false)
-		gdk.ThreadsLeave()
-	}
+func (mw *MapWidget) updateGUI() {
+	mw.compose()
+	mw.expose()
+	mw.dArea.GetWindow().Invalidate(nil, false)
 }
 
 func NewMapWidget(guicbs GUICallbacks) *MapWidget {
 	dArea := gtk.NewDrawingArea()
-	redraw := make(chan bool)
 
 	mw := &MapWidget{
 		dArea:      dArea,
 		guicbs:     guicbs,
-		redraw:     redraw,
 		showBiomes: true,
-		regWrap:    NewRegionWrapper(redraw, guicbs),
 		mx1:        -1,
 		my1:        -1,
 	}
-	go mw.guiUpdater()
+
+	mw.regWrap = NewRegionWrapper(mw.updateGUI, guicbs)
 
 	dArea.Connect("configure-event", mw.configure)
 	dArea.Connect("expose-event", mw.expose)

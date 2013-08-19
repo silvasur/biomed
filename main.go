@@ -135,7 +135,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 }
 
 func (g *GUI) betaWarning() {
-	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "This software is currently in beta.\nAlthough everythung seems to work, you should make a backup of your maps, just in case!")
+	dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "This software is currently in beta.\nAlthough everything seems to work, you should make a backup of your maps, just in case!")
 	dlg.Run()
 	dlg.Destroy()
 }
@@ -198,7 +198,7 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	drawHBox.PackStart(draw, true, true, 0)
 	drawHBox.PackStart(gtk.NewLabel("Radius:"), false, false, 3)
 	drawHBox.PackEnd(drawRadius, false, false, 3)
-	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return int(drawRadius.GetValue()) })))
+	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return drawRadius.GetValueAsInt() })))
 
 	vbox.PackStart(fill, false, false, 3)
 	vbox.PackStart(drawHBox, false, false, 3)

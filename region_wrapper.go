@@ -17,7 +17,7 @@ type RegionWrapper struct {
 	Biotiles map[XZPos]*gdk.Pixmap
 	bioCache map[XZPos][]mcmap.Biome
 
-	redraw chan<- bool
+	redraw func()
 	guicbs GUICallbacks
 
 	toolsEnabled bool
@@ -118,9 +118,7 @@ func (rw *RegionWrapper) tileUpdater() {
 					rw.Maptiles[pos], rw.Biotiles[pos], rw.bioCache[pos] = renderTile(chunk)
 					chunk.MarkUnused()
 
-					gdk.ThreadsLeave()
-					rw.redraw <- true
-					gdk.ThreadsEnter()
+					rw.redraw()
 				}
 			}
 		}
@@ -158,14 +156,12 @@ func (rw *RegionWrapper) flushTiles() {
 		return
 	}
 
-	gdk.ThreadsEnter()
 	for _, mt := range rw.Maptiles {
 		mt.Unref()
 	}
 	for _, bt := range rw.Biotiles {
 		bt.Unref()
 	}
-	gdk.ThreadsLeave()
 
 	rw.Maptiles = make(map[XZPos]*gdk.Pixmap)
 	rw.Biotiles = make(map[XZPos]*gdk.Pixmap)
@@ -173,9 +169,7 @@ func (rw *RegionWrapper) flushTiles() {
 }
 
 func (rw *RegionWrapper) Save() {
-	gdk.ThreadsLeave()
 	rw.flushTiles()
-	gdk.ThreadsEnter()
 
 	if err := rw.region.Flush(); err != nil {
 		rw.guicbs.reportFail(fmt.Sprintf("Error while flushing cache: %s", err))
@@ -204,7 +198,9 @@ func (rw *RegionWrapper) UseTool(x, z int) {
 			rw.guicbs.setBusy(false)
 			rw.toolsEnabled = true
 
-			rw.redraw <- true
+			gdk.ThreadsEnter()
+			rw.redraw()
+			gdk.ThreadsLeave()
 		}()
 	} else {
 		rw.tool.Do(rw.bio, rw, x, z)
@@ -348,7 +344,7 @@ func (rw *RegionWrapper) UpdateTiles() {
 	rw.tileUpdates <- true
 }
 
-func NewRegionWrapper(redraw chan<- bool, guicbs GUICallbacks) *RegionWrapper {
+func NewRegionWrapper(redraw func(), guicbs GUICallbacks) *RegionWrapper {
 	rw := &RegionWrapper{
 		redraw:       redraw,
 		tileUpdates:  make(chan bool),
