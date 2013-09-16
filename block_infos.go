@@ -141,6 +141,7 @@ var blockColors = map[mcmap.BlockID]*gdk.Color{
 	mcmap.BlkCarpet:                     gdk.NewColor("#ffffff"),
 	mcmap.BlkHardenedClay:               gdk.NewColor("#767a82"),
 	mcmap.BlkBlockOfCoal:                gdk.NewColor("#333333"),
+	mcmap.BlkPackedIce:                  gdk.NewColor("#63bff4"),
 }
 
 var blockCanSnowIn = map[mcmap.BlockID]bool{
@@ -182,7 +183,7 @@ var blockCanSnowIn = map[mcmap.BlockID]bool{
 	mcmap.BlkWool:                       true,
 	mcmap.BlkBlockMovedByPiston:         false,
 	mcmap.BlkDandelion:                  false,
-	mcmap.BlkRose:                       false,
+	mcmap.BlkFlower:                     false,
 	mcmap.BlkBrownMushroom:              false,
 	mcmap.BlkRedMushroom:                false,
 	mcmap.BlkBlockOfGold:                true,
@@ -308,4 +309,6 @@ var blockCanSnowIn = map[mcmap.BlockID]bool{
 	mcmap.BlkCarpet:                     false,
 	mcmap.BlkHardenedClay:               true,
 	mcmap.BlkBlockOfCoal:                true,
+	mcmap.BlkPackedIce:                  false,
+	mcmap.BlkLargeFlower:                false,
 }
