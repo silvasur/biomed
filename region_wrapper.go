@@ -243,7 +243,7 @@ func (rw *RegionWrapper) GetBiomeAt(x, z int) (mcmap.Biome, bool) {
 }
 
 func fixFreeze(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
-	for y := chunk.Height(bx, bz); y >= 0; y-- {
+	for y := mcmap.ChunkSizeY - 1; y >= 0; y-- {
 		if blk := chunk.Block(bx, y, bz); blk.ID != mcmap.BlkAir {
 			if (blk.ID == mcmap.BlkStationaryWater) || (blk.ID == mcmap.BlkWater) {
 				blk.ID = mcmap.BlkIce
@@ -265,7 +265,7 @@ func fixFreeze(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
 }
 
 func fixMelt(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
-	for y := chunk.Height(bx, bz); y >= 0; y-- {
+	for y := mcmap.ChunkSizeY - 1; y >= 0; y-- {
 		if blk := chunk.Block(bx, y, bz); blk.ID != mcmap.BlkAir {
 			if blk.ID == mcmap.BlkIce {
 				blk.ID = mcmap.BlkStationaryWater
