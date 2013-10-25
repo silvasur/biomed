@@ -16,14 +16,6 @@ If you want biomed to fix snow and ice (melt away for warm biomes, add for cold 
 
 If you are done, click `File > Save`.
 
-## Minecraft 1.7
-
-The first snapshots for Minecraft 1.7 are out and introduce a ton of new biomes. biomed can handle these, but currently not with the "official" version.
-
-This Git repository contains a `minecraft-1.7` branch that contains these changes. If you want to try these out, you'll need to checkout the `minecraft-1.7` branch and (re-)compile biomed, which is done by running `go build` in the biomed directory.
-
-I will not merge these changes into master before Minecraft 1.7 is released, since biomed versions from master should work with the currently official Minecraft release and I don't know how Minecraft will handle unknown biomes.
-
 ## WARNING
 
 Although everything seems to work, please make a backup of your maps, just in case.
