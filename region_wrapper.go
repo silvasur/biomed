@@ -242,9 +242,18 @@ func (rw *RegionWrapper) GetBiomeAt(x, z int) (mcmap.Biome, bool) {
 	return chunk.Biome(bx, bz), true
 }
 
-func fixFreeze(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
-	for y := mcmap.ChunkSizeY - 1; y >= 0; y-- {
-		if blk := chunk.Block(bx, y, bz); blk.ID != mcmap.BlkAir {
+func fixWeather(bio mcmap.Biome, bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
+	snowLine := snowLines[bio]
+
+	for y := mcmap.ChunkSizeY; y >= 0; y-- {
+		blk := chunk.Block(bx, y, bz)
+
+		if blk.ID == mcmap.BlkAir {
+			continue
+		}
+
+		if y >= snowLine {
+			// Freeze water and cover blocks with snow
 			if (blk.ID == mcmap.BlkStationaryWater) || (blk.ID == mcmap.BlkWater) {
 				blk.ID = mcmap.BlkIce
 				newcol = blockColors[mcmap.BlkIce]
@@ -256,17 +265,8 @@ func fixFreeze(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
 					newcol = blockColors[mcmap.BlkSnow]
 				}
 			}
-
-			break
-		}
-	}
-
-	return
-}
-
-func fixMelt(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
-	for y := mcmap.ChunkSizeY - 1; y >= 0; y-- {
-		if blk := chunk.Block(bx, y, bz); blk.ID != mcmap.BlkAir {
+		} else {
+			// Melt ice and remove snow cover
 			if blk.ID == mcmap.BlkIce {
 				blk.ID = mcmap.BlkStationaryWater
 				blk.Data = 0x0
@@ -280,9 +280,9 @@ func fixMelt(bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
 					}
 				}
 			}
-
-			break
 		}
+
+		break
 	}
 
 	return
@@ -306,11 +306,7 @@ func (rw *RegionWrapper) SetBiomeAt(x, z int, bio mcmap.Biome) {
 
 	var newcol *gdk.Color
 	if rw.fixSnowIce {
-		if coldBiome[bio] {
-			newcol = fixFreeze(bx, bz, chunk)
-		} else {
-			newcol = fixMelt(bx, bz, chunk)
-		}
+		newcol = fixWeather(bio, bx, bz, chunk)
 	}
 
 	chunk.MarkModified()
