@@ -21,6 +21,11 @@ type GUI struct {
 	statusContext uint
 	lastStatus    string
 
+	sbVBox *gtk.VBox
+
+	biomes  []BiomeInfo
+	bioVBox *gtk.VBox
+
 	mapw *MapWidget
 }
 
@@ -99,19 +104,22 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	quit.Connect("activate", g.exitApp)
 	fileMenu.Append(quit)
 
+	foo := gtk.NewMenuItemWithLabel("Foo")
+	foo.Connect("activate", func() {
+		f, _ := os.Open("test.biomes")
+		defer f.Close()
+		biomes, err := ReadBiomeInfos(f)
+		if err != nil {
+			panic(err)
+		}
+		g.biomes = biomes
+		g.updateBiomeInfo()
+	})
+	fileMenu.Append(foo)
+
 	fileMenuItem := gtk.NewMenuItemWithLabel("File")
 	fileMenuItem.SetSubmenu(fileMenu)
 	menubar.Append(fileMenuItem)
-
-	/*editMenu := gtk.NewMenu()
-
-	undo := gtk.NewMenuItemWithLabel("Undo")
-	undo.Connect("activate", g.undo)
-	editMenu.Append(undo)
-
-	editMenuItem := gtk.NewMenuItemWithLabel("Edit")
-	editMenuItem.SetSubmenu(editMenu)
-	menubar.Append(editMenuItem)*/
 
 	helpMenu := gtk.NewMenu()
 
@@ -174,19 +182,19 @@ func labelCustomFont(text, font string) *gtk.Label {
 }
 
 func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
-	vbox := gtk.NewVBox(false, 0)
+	g.sbVBox = gtk.NewVBox(false, 0)
 
-	vbox.PackStart(labelCustomFont("Tools", "Sans Bold 14"), false, false, 3)
+	g.sbVBox.PackStart(labelCustomFont("Tools", "Sans Bold 14"), false, false, 3)
 
 	g.showbiomes = gtk.NewCheckButtonWithLabel("Show Biomes")
 	g.showbiomes.SetActive(true)
 	g.showbiomes.Connect("toggled", g.showbiomesToggled)
-	vbox.PackStart(g.showbiomes, false, false, 3)
+	g.sbVBox.PackStart(g.showbiomes, false, false, 3)
 
 	g.fixSnowIce = gtk.NewCheckButtonWithLabel("Fix Snow/Ice")
 	g.fixSnowIce.SetTooltipText("Add Snow/Ice for Taiga/Ice Plains. Remove Snow/Ice for other biomes.")
 	g.fixSnowIce.Connect("toggled", g.fixSnowIceToggled)
-	vbox.PackStart(g.fixSnowIce, false, false, 3)
+	g.sbVBox.PackStart(g.fixSnowIce, false, false, 3)
 
 	fill := gtk.NewRadioButtonWithLabel(nil, "Fill")
 	fill.SetActive(true)
@@ -200,32 +208,50 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	drawHBox.PackEnd(drawRadius, false, false, 3)
 	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return drawRadius.GetValueAsInt() })))
 
-	vbox.PackStart(fill, false, false, 3)
-	vbox.PackStart(drawHBox, false, false, 3)
+	g.sbVBox.PackStart(fill, false, false, 3)
+	g.sbVBox.PackStart(drawHBox, false, false, 3)
 
-	vbox.PackStart(gtk.NewHSeparator(), false, false, 3)
-	vbox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
+	g.sbVBox.PackStart(gtk.NewHSeparator(), false, false, 3)
+	g.sbVBox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
 
+	g.bioVBox = gtk.NewVBox(false, 0)
+	g.sbVBox.PackStart(g.bioVBox, true, false, 3)
+	g.updateBiomeInfo()
+
+	scrolled := gtk.NewScrolledWindow(nil, nil)
+	scrolled.SetPolicy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+	scrolled.AddWithViewPort(g.sbVBox)
+	return scrolled
+}
+
+func (g *GUI) updateBiomeInfo() {
+	vbox := gtk.NewVBox(false, 0)
 	var grp *glib.SList
-	for _, bio := range bioList {
+
+	for _, biome := range g.biomes {
 		biohbox := gtk.NewHBox(false, 0)
-		cbox := colorBox(bioColors[bio])
+		cbox := colorBox(gdk.NewColor(biome.Color))
 		cbox.SetSizeRequest(20, 20)
 		biohbox.PackStart(cbox, false, false, 3)
-		rbutton := gtk.NewRadioButtonWithLabel(grp, bio.String())
+		rbutton := gtk.NewRadioButtonWithLabel(grp, biome.Name)
 		grp = rbutton.GetGroup()
-		rbutton.Connect("toggled", g.mkUpdateBiomeFx(rbutton, bio))
+		rbutton.Connect("toggled", g.mkUpdateBiomeFx(rbutton, biome.ID))
 		biohbox.PackEnd(rbutton, true, true, 3)
 		vbox.PackStart(biohbox, false, false, 3)
 	}
 
-	scrolled := gtk.NewScrolledWindow(nil, nil)
-	scrolled.SetPolicy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-	scrolled.AddWithViewPort(vbox)
-	return scrolled
+	g.sbVBox.Remove(g.bioVBox)
+	g.bioVBox.Destroy()
+
+	g.sbVBox.PackStart(vbox, true, false, 3)
+	g.bioVBox = vbox
+
+	// TODO: Update mapwidget
 }
 
 func (g *GUI) Init() {
+	g.biomes = ReadDefaultBiomes()
+
 	g.window = gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	g.window.SetTitle("biomed")
 
@@ -235,7 +261,7 @@ func (g *GUI) Init() {
 
 	hbox := gtk.NewHBox(false, 0)
 
-	g.mapw = NewMapWidget(GUICallbacks{g.reportError, g.updateInfo, g.setBusy})
+	g.mapw = NewMapWidget(GUICallbacks{g.reportError, g.updateInfo, g.setBusy}, MkBiomeLookup(g.biomes))
 	hbox.PackStart(g.mapw.DArea(), true, true, 3)
 
 	sidebar := g.mkSidebar()
@@ -273,8 +299,8 @@ func (g *GUI) reportError(msg string) {
 	os.Exit(1)
 }
 
-func (g *GUI) updateInfo(x, z int, bio mcmap.Biome) {
-	g.lastStatus = fmt.Sprintf("X:%d, Z:%d, Biome:%s", x, z, bio)
+func (g *GUI) updateInfo(x, z int, bio mcmap.Biome, name string) {
+	g.lastStatus = fmt.Sprintf("X:%d, Z:%d, Biome: %s(%d)", x, z, name, bio)
 	g.statusbar.Pop(g.statusContext)
 	g.statusbar.Push(g.statusContext, g.lastStatus)
 }
@@ -310,10 +336,6 @@ func (g *GUI) showbiomesToggled() {
 func (g *GUI) fixSnowIceToggled() {
 	g.mapw.SetFixSnowIce(g.fixSnowIce.GetActive())
 }
-
-/*func (g *GUI) undo() {
-	fmt.Println("Undo")
-}*/
 
 func (g *GUI) Show() {
 	g.window.ShowAll()

@@ -28,9 +28,11 @@ type RegionWrapper struct {
 	bio mcmap.Biome
 
 	startX, startZ, endX, endZ int
+
+	bioLookup BiomeLookup
 }
 
-func renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap, biocache []mcmap.Biome) {
+func (rw *RegionWrapper) renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap, biocache []mcmap.Biome) {
 	maptile = emptyPixmap(tileSize, tileSize, 24)
 	mtDrawable := maptile.GetDrawable()
 	mtGC := gdk.NewGC(mtDrawable)
@@ -46,7 +48,7 @@ func renderTile(chunk *mcmap.Chunk) (maptile, biotile *gdk.Pixmap, biocache []mc
 	scanX:
 		for x := 0; x < mcmap.ChunkSizeXZ; x++ {
 			bio := chunk.Biome(x, z)
-			btGC.SetRgbFgColor(bioColors[bio])
+			btGC.SetRgbFgColor(rw.bioLookup.Color(bio))
 			btDrawable.DrawRectangle(btGC, true, x*zoom, z*zoom, zoom, zoom)
 
 			biocache[i] = bio
@@ -115,7 +117,7 @@ func (rw *RegionWrapper) tileUpdater() {
 						return
 					}
 
-					rw.Maptiles[pos], rw.Biotiles[pos], rw.bioCache[pos] = renderTile(chunk)
+					rw.Maptiles[pos], rw.Biotiles[pos], rw.bioCache[pos] = rw.renderTile(chunk)
 					chunk.MarkUnused()
 
 					rw.redraw()
@@ -242,8 +244,8 @@ func (rw *RegionWrapper) GetBiomeAt(x, z int) (mcmap.Biome, bool) {
 	return chunk.Biome(bx, bz), true
 }
 
-func fixWeather(bio mcmap.Biome, bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
-	snowLine := snowLines[bio]
+func (rw *RegionWrapper) fixWeather(bio mcmap.Biome, bx, bz int, chunk *mcmap.Chunk) (newcol *gdk.Color) {
+	snowLine := rw.bioLookup.SnowLine(bio)
 
 	for y := mcmap.ChunkSizeY; y >= 0; y-- {
 		blk := chunk.Block(bx, y, bz)
@@ -306,7 +308,7 @@ func (rw *RegionWrapper) SetBiomeAt(x, z int, bio mcmap.Biome) {
 
 	var newcol *gdk.Color
 	if rw.fixSnowIce {
-		newcol = fixWeather(bio, bx, bz, chunk)
+		newcol = rw.fixWeather(bio, bx, bz, chunk)
 	}
 
 	chunk.MarkModified()
@@ -322,7 +324,7 @@ func (rw *RegionWrapper) SetBiomeAt(x, z int, bio mcmap.Biome) {
 
 		drawable := biotile.GetDrawable()
 		gc := gdk.NewGC(drawable)
-		gc.SetRgbFgColor(bioColors[bio])
+		gc.SetRgbFgColor(rw.bioLookup.Color(bio))
 		drawable.DrawRectangle(gc, true, bx*zoom, bz*zoom, zoom, zoom)
 
 		if newcol != nil {
