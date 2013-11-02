@@ -233,6 +233,16 @@ func (mw *MapWidget) updateGUI() {
 	mw.dArea.GetWindow().Invalidate(nil, false)
 }
 
+func (mw *MapWidget) updateBioLookup(lookup BiomeLookup) {
+	mw.bioLookup = lookup
+	mw.regWrap.bioLookup = lookup
+
+	if mw.regWrap.RegionLoaded() {
+		mw.regWrap.FlushTiles()
+		mw.regWrap.UpdateTiles()
+	}
+}
+
 func NewMapWidget(guicbs GUICallbacks, bioLookup BiomeLookup) *MapWidget {
 	dArea := gtk.NewDrawingArea()
 

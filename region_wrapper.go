@@ -131,11 +131,11 @@ func (rw *RegionWrapper) tileUpdater() {
 
 func (rw *RegionWrapper) SetRegion(region *mcmap.Region) {
 	if rw.RegionLoaded() {
-		rw.flushTiles()
+		rw.FlushTiles()
 	}
 	rw.region = NewCachedRegion(region, cacheSize)
 
-	rw.tileUpdates <- true
+	rw.UpdateTiles()
 }
 
 func (rw *RegionWrapper) SetChunkBounds(startX, startZ, endX, endZ int) {
@@ -152,7 +152,7 @@ func (rw *RegionWrapper) SetFixSnowIce(b bool)     { rw.fixSnowIce = b }
 func (rw *RegionWrapper) RegionLoaded() bool    { return rw.region != nil }
 func (rw *RegionWrapper) ToolSingleClick() bool { return rw.tool.SingleClick() }
 
-func (rw *RegionWrapper) flushTiles() {
+func (rw *RegionWrapper) FlushTiles() {
 	if err := rw.region.Flush(); err != nil {
 		rw.guicbs.reportFail(fmt.Sprintf("Error while flushing cache: %s", err))
 		return
@@ -171,7 +171,7 @@ func (rw *RegionWrapper) flushTiles() {
 }
 
 func (rw *RegionWrapper) Save() {
-	rw.flushTiles()
+	rw.FlushTiles()
 
 	if err := rw.region.Flush(); err != nil {
 		rw.guicbs.reportFail(fmt.Sprintf("Error while flushing cache: %s", err))

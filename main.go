@@ -21,8 +21,8 @@ type GUI struct {
 	statusContext uint
 	lastStatus    string
 
-	biomes  []BiomeInfo
-	bioVBox *gtk.VBox
+	biomes      []BiomeInfo
+	bioVBox     *gtk.VBox
 	bioVBoxWrap *gtk.VBox
 
 	mapw *MapWidget
@@ -246,7 +246,7 @@ func (g *GUI) updateBiomeInfo() {
 	vbox.ShowAll()
 	g.bioVBox = vbox
 
-	// TODO: Update mapwidget
+	g.mapw.updateBioLookup(MkBiomeLookup(g.biomes))
 }
 
 func (g *GUI) Init() {
