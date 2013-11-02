@@ -44,14 +44,13 @@ func ReadBiomeInfos(r io.Reader) ([]BiomeInfo, error) {
 		if (snow >= mcmap.ChunkSizeY) || (snow < 0) {
 			snow = mcmap.ChunkSizeY
 		}
-		
+
 		info := BiomeInfo{
 			ID:       mcmap.Biome(id),
 			SnowLine: int(snow),
 			Color:    parts[2],
 			Name:     parts[3],
 		}
-		fmt.Println(info)
 		biomes = append(biomes, info)
 	}
 
@@ -82,7 +81,6 @@ func (bl BiomeLookup) Color(bio mcmap.Biome) *gdk.Color {
 		return colBuf.Color(info.Color)
 	}
 
-	fmt.Println("FAIL")
 	return colBlack
 }
 
