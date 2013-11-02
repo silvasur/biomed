@@ -103,22 +103,22 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	quit.Connect("activate", g.exitApp)
 	fileMenu.Append(quit)
 
-	foo := gtk.NewMenuItemWithLabel("Foo")
-	foo.Connect("activate", func() {
-		f, _ := os.Open("test.biomes")
-		defer f.Close()
-		biomes, err := ReadBiomeInfos(f)
-		if err != nil {
-			panic(err)
-		}
-		g.biomes = biomes
-		g.updateBiomeInfo()
-	})
-	fileMenu.Append(foo)
-
 	fileMenuItem := gtk.NewMenuItemWithLabel("File")
 	fileMenuItem.SetSubmenu(fileMenu)
 	menubar.Append(fileMenuItem)
+
+	prefMenu := gtk.NewMenu()
+
+	confbiomes := gtk.NewMenuItemWithLabel("Configure Biomes")
+	confbiomes.Connect("activate", func() {
+		// TODO: Display awesome biome editor dialog thing.
+		fmt.Println("(...)")
+	})
+	prefMenu.Append(confbiomes)
+
+	prefMenuItem := gtk.NewMenuItemWithLabel("Preferences")
+	prefMenuItem.SetSubmenu(prefMenu)
+	menubar.Append(prefMenuItem)
 
 	helpMenu := gtk.NewMenu()
 
