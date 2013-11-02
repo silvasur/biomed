@@ -21,10 +21,9 @@ type GUI struct {
 	statusContext uint
 	lastStatus    string
 
-	sbVBox *gtk.VBox
-
 	biomes  []BiomeInfo
 	bioVBox *gtk.VBox
+	bioVBoxWrap *gtk.VBox
 
 	mapw *MapWidget
 }
@@ -182,19 +181,19 @@ func labelCustomFont(text, font string) *gtk.Label {
 }
 
 func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
-	g.sbVBox = gtk.NewVBox(false, 0)
+	sbVBox := gtk.NewVBox(false, 0)
 
-	g.sbVBox.PackStart(labelCustomFont("Tools", "Sans Bold 14"), false, false, 3)
+	sbVBox.PackStart(labelCustomFont("Tools", "Sans Bold 14"), false, false, 3)
 
 	g.showbiomes = gtk.NewCheckButtonWithLabel("Show Biomes")
 	g.showbiomes.SetActive(true)
 	g.showbiomes.Connect("toggled", g.showbiomesToggled)
-	g.sbVBox.PackStart(g.showbiomes, false, false, 3)
+	sbVBox.PackStart(g.showbiomes, false, false, 3)
 
 	g.fixSnowIce = gtk.NewCheckButtonWithLabel("Fix Snow/Ice")
 	g.fixSnowIce.SetTooltipText("Add Snow/Ice for Taiga/Ice Plains. Remove Snow/Ice for other biomes.")
 	g.fixSnowIce.Connect("toggled", g.fixSnowIceToggled)
-	g.sbVBox.PackStart(g.fixSnowIce, false, false, 3)
+	sbVBox.PackStart(g.fixSnowIce, false, false, 3)
 
 	fill := gtk.NewRadioButtonWithLabel(nil, "Fill")
 	fill.SetActive(true)
@@ -208,19 +207,21 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	drawHBox.PackEnd(drawRadius, false, false, 3)
 	draw.Connect("toggled", g.mkUpdateToolFx(draw, NewDrawTool(func() int { return drawRadius.GetValueAsInt() })))
 
-	g.sbVBox.PackStart(fill, false, false, 3)
-	g.sbVBox.PackStart(drawHBox, false, false, 3)
+	sbVBox.PackStart(fill, false, false, 3)
+	sbVBox.PackStart(drawHBox, false, false, 3)
 
-	g.sbVBox.PackStart(gtk.NewHSeparator(), false, false, 3)
-	g.sbVBox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
+	sbVBox.PackStart(gtk.NewHSeparator(), false, false, 3)
+	sbVBox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
 
+	g.bioVBoxWrap = gtk.NewVBox(false, 0)
 	g.bioVBox = gtk.NewVBox(false, 0)
-	g.sbVBox.PackStart(g.bioVBox, true, false, 3)
+	g.bioVBoxWrap.PackStart(g.bioVBox, false, false, 0)
+	sbVBox.PackStart(g.bioVBoxWrap, false, false, 3)
 	g.updateBiomeInfo()
 
 	scrolled := gtk.NewScrolledWindow(nil, nil)
 	scrolled.SetPolicy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
-	scrolled.AddWithViewPort(g.sbVBox)
+	scrolled.AddWithViewPort(sbVBox)
 	return scrolled
 }
 
@@ -240,10 +241,9 @@ func (g *GUI) updateBiomeInfo() {
 		vbox.PackStart(biohbox, false, false, 3)
 	}
 
-	g.sbVBox.Remove(g.bioVBox)
-	g.bioVBox.Destroy()
-
-	g.sbVBox.PackStart(vbox, true, false, 3)
+	g.bioVBoxWrap.Remove(g.bioVBox)
+	g.bioVBoxWrap.PackStart(vbox, false, false, 3)
+	vbox.ShowAll()
 	g.bioVBox = vbox
 
 	// TODO: Update mapwidget
