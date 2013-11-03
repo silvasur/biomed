@@ -111,8 +111,13 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 
 	confbiomes := gtk.NewMenuItemWithLabel("Configure Biomes")
 	confbiomes.Connect("activate", func() {
-		// TODO: Display awesome biome editor dialog thing.
-		fmt.Println("(...)")
+		ed := NewBiomeInfoEditor(g.biomes)
+		rv := ed.Run()
+		ed.Destroy()
+		if rv == gtk.RESPONSE_OK {
+			g.biomes = ed.Biomes()
+			g.updateBiomeInfo()
+		}
 	})
 	prefMenu.Append(confbiomes)
 
