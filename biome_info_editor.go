@@ -160,25 +160,23 @@ func errdlg(msg string, params ...interface{}) {
 }
 
 func (ed *BiomeInfoEditor) load() {
-	f1, f2 := mkBioFFilters()
 	dlg := gtk.NewFileChooserDialog("Load", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "OK", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
-	dlg.AddFilter(f1)
-	dlg.AddFilter(f2)
 	defer dlg.Destroy()
+askFilename:
 	if dlg.Run() == gtk.RESPONSE_OK {
 		path := dlg.GetFilename()
 
 		f, err := os.Open(path)
 		if err != nil {
 			errdlg("Could not load biome infos %s:\n%s", path, err.Error())
-			return
+			goto askFilename
 		}
 		defer f.Close()
 
 		infos, err := ReadBiomeInfos(f)
 		if err != nil {
 			errdlg("Could not load biome infos %s:\n%s", path, err.Error())
-			return
+			goto askFilename
 		}
 
 		ed.biomes = infos
@@ -187,7 +185,34 @@ func (ed *BiomeInfoEditor) load() {
 }
 
 func (ed *BiomeInfoEditor) save() {
-	// TODO
+	dlg := gtk.NewFileChooserDialog("Save", nil, gtk.FILE_CHOOSER_ACTION_SAVE, "OK", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+	defer dlg.Destroy()
+askFilename:
+	if dlg.Run() == gtk.RESPONSE_OK {
+		path := dlg.GetFilename()
+
+		if _, err := os.Stat(path); err == nil {
+			qdlg := gtk.NewMessageDialog(nil, gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, "File %s already exists. Overwrite?", path)
+			resp := qdlg.Run()
+			qdlg.Destroy()
+
+			if resp != gtk.RESPONSE_YES {
+				goto askFilename
+			}
+		}
+
+		f, err := os.Create(path)
+		if err != nil {
+			errdlg("Could not save biome infos %s:\n%s", path, err.Error())
+			goto askFilename
+		}
+		defer f.Close()
+
+		if err := WriteBiomeInfos(ed.biomes, f); err != nil {
+			errdlg("Could not save biome infos %s:\n%s", path, err.Error())
+			goto askFilename
+		}
+	}
 }
 
 func (ed *BiomeInfoEditor) Biomes() []BiomeInfo { return ed.biomes }
