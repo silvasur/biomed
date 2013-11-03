@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/kch42/gomcmap/mcmap"
 	"github.com/mattn/go-gtk/gdk"
+	"github.com/mattn/go-gtk/gdkpixbuf"
+	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
 	"os"
 	"strconv"
@@ -98,15 +100,80 @@ func (frm *biomeEditFrame) unlockApply() {
 	frm.applyBtn.SetSensitive(frm.checkOK())
 }
 
+type biomeList struct {
+	*gtk.HBox
+	treeview *gtk.TreeView
+	lStore   *gtk.ListStore
+	biomes   []BiomeInfo
+}
+
+func newBiomeList() *biomeList {
+	bl := &biomeList{
+		HBox:     gtk.NewHBox(false, 0),
+		treeview: gtk.NewTreeView(),
+		lStore:   gtk.NewListStore(gdkpixbuf.GetType(), glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING),
+	}
+
+	scroll := gtk.NewScrolledWindow(nil, nil)
+	scroll.SetPolicy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+	scroll.Add(bl.treeview)
+	bl.PackStart(scroll, true, true, 3)
+
+	bl.treeview.SetModel(bl.lStore)
+	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Color", gtk.NewCellRendererPixbuf(), "pixbuf", 0))
+	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("ID", gtk.NewCellRendererText(), "text", 1))
+	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Snowline", gtk.NewCellRendererText(), "text", 2))
+	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Name", gtk.NewCellRendererText(), "text", 3))
+
+	bl.PackStart(bl.treeview, true, true, 3)
+
+	vbox := gtk.NewVBox(false, 0)
+
+	addBtn := gtk.NewButton()
+	addBtn.Add(gtk.NewImageFromStock(gtk.STOCK_ADD, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	delBtn := gtk.NewButton()
+	delBtn.Add(gtk.NewImageFromStock(gtk.STOCK_DELETE, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	upBtn := gtk.NewButton()
+	upBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_UP, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	downBtn := gtk.NewButton()
+	downBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_DOWN, gtk.ICON_SIZE_SMALL_TOOLBAR))
+
+	addBtn.Connect("clicked", bl.onAdd)
+	delBtn.Connect("clicked", bl.onDel)
+	upBtn.Connect("clicked", bl.onUp)
+	downBtn.Connect("clicked", bl.onDown)
+
+	vbox.PackStart(addBtn, false, false, 3)
+	vbox.PackStart(delBtn, false, false, 3)
+	vbox.PackStart(upBtn, false, false, 3)
+	vbox.PackStart(downBtn, false, false, 3)
+
+	bl.PackStart(vbox, false, false, 0)
+
+	return bl
+}
+
+func (bl *biomeList) SetBiomes(biomes []BiomeInfo) {
+	bl.biomes = biomes
+	// TODO: Update View
+}
+
+func (bl *biomeList) Biomes() []BiomeInfo { return bl.biomes }
+
+func (bl *biomeList) onAdd()  {} // TODO
+func (bl *biomeList) onDel()  {} // TODO
+func (bl *biomeList) onUp()   {} // TODO
+func (bl *biomeList) onDown() {} // TODO
+
 type BiomeInfoEditor struct {
 	*gtk.Dialog
-	biomes []BiomeInfo
+	biolist *biomeList
 }
 
 func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 	ed := &BiomeInfoEditor{
-		Dialog: gtk.NewDialog(),
-		biomes: biomes,
+		Dialog:  gtk.NewDialog(),
+		biolist: newBiomeList(),
 	}
 
 	ed.SetModal(true)
@@ -127,6 +194,9 @@ func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 	btnHBox.PackStart(saveBtn, true, true, 3)
 	vbox.PackStart(btnHBox, false, false, 3)
 
+	ed.biolist.SetBiomes(biomes)
+	vbox.PackStart(ed.biolist, false, false, 3)
+
 	editFrame := newBiomeEditFrame()
 	vbox.PackStart(editFrame, false, false, 3)
 
@@ -137,8 +207,7 @@ func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 }
 
 func (ed *BiomeInfoEditor) reset() {
-	ed.biomes = ReadDefaultBiomes()
-	// TODO: Update view
+	ed.biolist.SetBiomes(ReadDefaultBiomes())
 }
 
 func mkBioFFilters() (*gtk.FileFilter, *gtk.FileFilter) {
@@ -179,8 +248,7 @@ askFilename:
 			goto askFilename
 		}
 
-		ed.biomes = infos
-		// TODO: Update view
+		ed.biolist.SetBiomes(infos)
 	}
 }
 
@@ -208,11 +276,11 @@ askFilename:
 		}
 		defer f.Close()
 
-		if err := WriteBiomeInfos(ed.biomes, f); err != nil {
+		if err := WriteBiomeInfos(ed.biolist.Biomes(), f); err != nil {
 			errdlg("Could not save biome infos %s:\n%s", path, err.Error())
 			goto askFilename
 		}
 	}
 }
 
-func (ed *BiomeInfoEditor) Biomes() []BiomeInfo { return ed.biomes }
+func (ed *BiomeInfoEditor) Biomes() []BiomeInfo { return ed.biolist.Biomes() }
