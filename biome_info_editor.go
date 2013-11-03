@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/kch42/gomcmap/mcmap"
-	"github.com/kch42/kagus"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/gtk"
+	"os"
 	"strconv"
-	"unicode"
 )
 
 type biomeEditFrame struct {
@@ -29,7 +28,7 @@ func newBiomeEditFrame() *biomeEditFrame {
 
 	frm.idInput.SetSizeRequest(40, -1)
 	frm.snowLineInput.SetSizeRequest(40, -1)
-	
+
 	frm.idInput.Connect("changed", frm.unlockApply)
 	frm.nameInput.Connect("changed", frm.unlockApply)
 	frm.snowLineInput.Connect("changed", frm.unlockApply)
@@ -76,7 +75,7 @@ func (frm *biomeEditFrame) getBiomeInfo() (BiomeInfo, bool) {
 	}
 
 	name := frm.nameInput.GetText()
-	if name != "" {
+	if name == "" {
 		return BiomeInfo{}, false
 	}
 
@@ -91,15 +90,8 @@ func (frm *biomeEditFrame) getBiomeInfo() (BiomeInfo, bool) {
 }
 
 func (frm *biomeEditFrame) checkOK() bool {
-	if id := frm.idInput.GetText(); (id == "") || (!kagus.StringConsistsOf(id, unicode.IsNumber)) {
-		return false
-	}
-
-	if snow := frm.snowLineInput.GetText(); (snow == "") || (!kagus.StringConsistsOf(snow, unicode.IsNumber)) {
-		return false
-	}
-
-	return frm.nameInput.GetText() != ""
+	_, ok := frm.getBiomeInfo()
+	return ok
 }
 
 func (frm *biomeEditFrame) unlockApply() {
@@ -118,6 +110,7 @@ func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 	}
 
 	ed.SetModal(true)
+
 	vbox := ed.GetVBox()
 
 	btnHBox := gtk.NewHBox(true, 0)
@@ -148,8 +141,49 @@ func (ed *BiomeInfoEditor) reset() {
 	// TODO: Update view
 }
 
+func mkBioFFilters() (*gtk.FileFilter, *gtk.FileFilter) {
+	f1 := gtk.NewFileFilter()
+	f1.AddPattern("*.biomes")
+	f1.SetName("Biome Infos (.biomes)")
+
+	f2 := gtk.NewFileFilter()
+	f2.AddPattern("*")
+	f2.SetName("All files")
+
+	return f1, f2
+}
+
+func errdlg(msg string, params ...interface{}) {
+	dlg := gtk.NewMessageDialog(nil, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_ERROR, gtk.BUTTONS_OK, msg, params...)
+	dlg.Run()
+	dlg.Destroy()
+}
+
 func (ed *BiomeInfoEditor) load() {
-	// TODO
+	f1, f2 := mkBioFFilters()
+	dlg := gtk.NewFileChooserDialog("Load", nil, gtk.FILE_CHOOSER_ACTION_OPEN, "OK", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+	dlg.AddFilter(f1)
+	dlg.AddFilter(f2)
+	defer dlg.Destroy()
+	if dlg.Run() == gtk.RESPONSE_OK {
+		path := dlg.GetFilename()
+
+		f, err := os.Open(path)
+		if err != nil {
+			errdlg("Could not load biome infos %s:\n%s", path, err.Error())
+			return
+		}
+		defer f.Close()
+
+		infos, err := ReadBiomeInfos(f)
+		if err != nil {
+			errdlg("Could not load biome infos %s:\n%s", path, err.Error())
+			return
+		}
+
+		ed.biomes = infos
+		// TODO: Update view
+	}
 }
 
 func (ed *BiomeInfoEditor) save() {
