@@ -113,10 +113,11 @@ func (frm *biomeEditFrame) unlockApply() {
 
 type biomeList struct {
 	*gtk.HBox
-	treeview *gtk.TreeView
-	lStore   *gtk.ListStore
-	biomes   []BiomeInfo
-	editfrm  *biomeEditFrame
+	treeview                       *gtk.TreeView
+	lStore                         *gtk.ListStore
+	biomes                         []BiomeInfo
+	editfrm                        *biomeEditFrame
+	addBtn, delBtn, upBtn, downBtn *gtk.Button
 }
 
 func newBiomeList() *biomeList {
@@ -124,6 +125,10 @@ func newBiomeList() *biomeList {
 		HBox:     gtk.NewHBox(false, 0),
 		treeview: gtk.NewTreeView(),
 		lStore:   gtk.NewListStore(glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING),
+		addBtn:   gtk.NewButton(),
+		delBtn:   gtk.NewButton(),
+		upBtn:    gtk.NewButton(),
+		downBtn:  gtk.NewButton(),
 	}
 
 	scroll := gtk.NewScrolledWindow(nil, nil)
@@ -142,24 +147,24 @@ func newBiomeList() *biomeList {
 
 	vbox := gtk.NewVBox(false, 0)
 
-	addBtn := gtk.NewButton()
-	addBtn.Add(gtk.NewImageFromStock(gtk.STOCK_ADD, gtk.ICON_SIZE_SMALL_TOOLBAR))
-	delBtn := gtk.NewButton()
-	delBtn.Add(gtk.NewImageFromStock(gtk.STOCK_DELETE, gtk.ICON_SIZE_SMALL_TOOLBAR))
-	upBtn := gtk.NewButton()
-	upBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_UP, gtk.ICON_SIZE_SMALL_TOOLBAR))
-	downBtn := gtk.NewButton()
-	downBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_DOWN, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	bl.addBtn.Add(gtk.NewImageFromStock(gtk.STOCK_ADD, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	bl.delBtn.Add(gtk.NewImageFromStock(gtk.STOCK_DELETE, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	bl.upBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_UP, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	bl.downBtn.Add(gtk.NewImageFromStock(gtk.STOCK_GO_DOWN, gtk.ICON_SIZE_SMALL_TOOLBAR))
 
-	addBtn.Connect("clicked", bl.onAdd)
-	delBtn.Connect("clicked", bl.onDel)
-	upBtn.Connect("clicked", bl.onUp)
-	downBtn.Connect("clicked", bl.onDown)
+	bl.addBtn.Connect("clicked", bl.onAdd)
+	bl.delBtn.Connect("clicked", bl.onDel)
+	bl.upBtn.Connect("clicked", bl.onUp)
+	bl.downBtn.Connect("clicked", bl.onDown)
 
-	vbox.PackStart(addBtn, false, false, 3)
-	vbox.PackStart(delBtn, false, false, 3)
-	vbox.PackStart(upBtn, false, false, 3)
-	vbox.PackStart(downBtn, false, false, 3)
+	bl.delBtn.SetSensitive(false)
+	bl.upBtn.SetSensitive(false)
+	bl.downBtn.SetSensitive(false)
+
+	vbox.PackStart(bl.addBtn, false, false, 3)
+	vbox.PackStart(bl.delBtn, false, false, 3)
+	vbox.PackStart(bl.upBtn, false, false, 3)
+	vbox.PackStart(bl.downBtn, false, false, 3)
 
 	bl.PackStart(vbox, false, false, 0)
 
@@ -209,11 +214,14 @@ func (bl *biomeList) treeviewIdx() (int, *gtk.TreeIter, *gtk.TreePath) {
 
 func (bl *biomeList) onCursorChanged() {
 	idx, _, _ := bl.treeviewIdx()
-	if idx < 0 {
-		return
-	}
 
-	bl.editfrm.setBiomeInfo(bl.biomes[idx])
+	bl.delBtn.SetSensitive(idx >= 0)
+	bl.upBtn.SetSensitive(idx >= 1)
+	bl.downBtn.SetSensitive((idx >= 0) && (idx < len(bl.biomes)-1))
+
+	if idx >= 0 {
+		bl.editfrm.setBiomeInfo(bl.biomes[idx])
+	}
 }
 
 func (bl *biomeList) onAdd() {
