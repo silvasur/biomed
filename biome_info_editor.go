@@ -125,8 +125,6 @@ func newBiomeList() *biomeList {
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Snowline", gtk.NewCellRendererText(), "text", 2))
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Name", gtk.NewCellRendererText(), "text", 3))
 
-	bl.PackStart(bl.treeview, true, true, 3)
-
 	vbox := gtk.NewVBox(false, 0)
 
 	addBtn := gtk.NewButton()
