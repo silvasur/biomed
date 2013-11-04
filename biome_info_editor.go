@@ -39,6 +39,9 @@ func newBiomeEditFrame() *biomeEditFrame {
 	vbox := gtk.NewVBox(false, 0)
 	hbox := gtk.NewHBox(false, 0)
 
+	frm.idInput.SetTooltipText("The data value of the Biome [0-255]")
+	frm.snowLineInput.SetTooltipText(fmt.Sprintf("Height (Y coordinate) at which snowfall starts (-1 or %d for no snowfall, 0 for always snowy)", mcmap.ChunkSizeY))
+
 	hbox.PackStart(gtk.NewLabel("Color:"), false, false, 0)
 	hbox.PackStart(frm.colorInput, false, false, 3)
 	hbox.PackStart(gtk.NewLabel("ID:"), false, false, 0)
