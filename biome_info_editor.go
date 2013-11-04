@@ -171,7 +171,7 @@ func (bl *biomeList) setBiome(iter *gtk.TreeIter, biome BiomeInfo) {
 }
 
 func (bl *biomeList) setCurrentBiome(biome BiomeInfo) {
-	idx, iter := bl.treeviewIdx()
+	idx, iter, _ := bl.treeviewIdx()
 	if idx < 0 {
 		return
 	}
@@ -192,23 +192,23 @@ func (bl *biomeList) SetBiomes(biomes []BiomeInfo) {
 
 func (bl *biomeList) Biomes() []BiomeInfo { return bl.biomes }
 
-func (bl *biomeList) treeviewIdx() (int, *gtk.TreeIter) {
+func (bl *biomeList) treeviewIdx() (int, *gtk.TreeIter, *gtk.TreePath) {
 	var path *gtk.TreePath
 	var column *gtk.TreeViewColumn
 	bl.treeview.GetCursor(&path, &column)
 
 	idxs := path.GetIndices()
 	if len(idxs) != 1 {
-		return -1, nil
+		return -1, nil, nil
 	}
 	var iter gtk.TreeIter
 	bl.lStore.GetIter(&iter, path)
 
-	return idxs[0], &iter
+	return idxs[0], &iter, path
 }
 
 func (bl *biomeList) onCursorChanged() {
-	idx, _ := bl.treeviewIdx()
+	idx, _, _ := bl.treeviewIdx()
 	if idx < 0 {
 		return
 	}
@@ -234,7 +234,7 @@ func (bl *biomeList) onAdd() {
 }
 
 func (bl *biomeList) onDel() {
-	idx, iter := bl.treeviewIdx()
+	idx, iter, _ := bl.treeviewIdx()
 	if idx < 0 {
 		return
 	}
@@ -244,8 +244,35 @@ func (bl *biomeList) onDel() {
 
 	bl.lStore.Remove(iter)
 }
-func (bl *biomeList) onUp()   {} // TODO
-func (bl *biomeList) onDown() {} // TODO
+func (bl *biomeList) onUp() {
+	idx, iter, path := bl.treeviewIdx()
+	if idx <= 0 {
+		return
+	}
+
+	path.Prev()
+	var iter2 gtk.TreeIter
+	bl.lStore.GetIter(&iter2, path)
+
+	bl.lStore.MoveBefore(iter, &iter2)
+
+	bl.biomes[idx], bl.biomes[idx-1] = bl.biomes[idx-1], bl.biomes[idx]
+}
+
+func (bl *biomeList) onDown() {
+	idx, iter, path := bl.treeviewIdx()
+	if (idx < 0) || (idx >= len(bl.biomes)-1) {
+		return
+	}
+
+	path.Next()
+	var iter2 gtk.TreeIter
+	bl.lStore.GetIter(&iter2, path)
+
+	bl.lStore.MoveAfter(iter, &iter2)
+
+	bl.biomes[idx], bl.biomes[idx+1] = bl.biomes[idx+1], bl.biomes[idx]
+}
 
 func connectBiomeListEditFrame(bl *biomeList, frm *biomeEditFrame) {
 	bl.editfrm = frm
