@@ -13,10 +13,12 @@ type GUI struct {
 	window    *gtk.Window
 	statusbar *gtk.Statusbar
 
+	accel *gtk.AccelGroup
+
 	showbiomes *gtk.CheckButton
 	fixSnowIce *gtk.CheckButton
 
-	menuitemSave *gtk.MenuItem
+	menuitemSave *gtk.ImageMenuItem
 
 	statusContext uint
 	lastStatus    string
@@ -94,7 +96,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 
 	fileMenu := gtk.NewMenu()
 
-	open := gtk.NewMenuItemWithLabel("Open")
+	open := gtk.NewImageMenuItemFromStock(gtk.STOCK_OPEN, g.accel)
 	open.Connect("activate", g.openWorldDlg)
 	fileMenu.Append(open)
 
@@ -104,12 +106,12 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 		fileMenu.Append(quickopenItem)
 	}
 
-	g.menuitemSave = gtk.NewMenuItemWithLabel("Save")
+	g.menuitemSave = gtk.NewImageMenuItemFromStock(gtk.STOCK_SAVE, g.accel)
 	g.menuitemSave.Connect("activate", g.save)
 	g.menuitemSave.SetSensitive(false)
 	fileMenu.Append(g.menuitemSave)
 
-	quit := gtk.NewMenuItemWithLabel("Quit")
+	quit := gtk.NewImageMenuItemFromStock(gtk.STOCK_QUIT, g.accel)
 	quit.Connect("activate", g.exitApp)
 	fileMenu.Append(quit)
 
@@ -127,7 +129,7 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	})
 	helpMenu.Append(controls)
 
-	about := gtk.NewMenuItemWithLabel("About")
+	about := gtk.NewImageMenuItemFromStock(gtk.STOCK_ABOUT, g.accel)
 	about.Connect("activate", g.aboutDlg)
 	helpMenu.Append(about)
 
@@ -258,6 +260,9 @@ func (g *GUI) Init() {
 
 	g.window = gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	g.window.SetTitle("biomed")
+
+	g.accel = gtk.NewAccelGroup()
+	g.window.AddAccelGroup(g.accel)
 
 	menubar := g.mkMenuBar()
 	vbox := gtk.NewVBox(false, 0)
