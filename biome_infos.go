@@ -148,28 +148,28 @@ var defaultBiomes = `0	-1	#0000ff	Ocean
 37	-1	#ff6c00	Mesa
 38	-1	#d9691e	Mesa Plateau F
 39	-1	#d95b07	Mesa Plateau
-40	-1	#ffd504	Sunflower Plains
-41	-1	#f4ff3f	Desert M
-42	95	#8c4500	Extreme Hills M
-43	-1	#e02f4a	Flower Forest
-44	-1	#0a6148	Taiga M
-45	-1	#58630e	Swampland M
-46	0	#ace8e8	Ice Plains Spikes
-47	0	#91cccc	Ice Mountains Spikes
-48	-1	#30ba07	Jungle M
-49	-1	#3e9130	JungleEdge M
-50	-1	#228548	Birch Forest M
-51	-1	#2b7547	Birch Forest Hills M
-52	-1	#1a5428	Roofed Forest M
-53	0	#0f706b	Cold Taiga M
-54	-1	#198058	Mega Spruce Taiga
-55	-1	#156e4c	Mega Spruce Taiga Hills
-56	95	#ba5c00	Extreme Hills+ M
-57	-1	#858111	Savanna M
-58	-1	#87830b	Savanna Plateau M
-59	-1	#ff5100	Mesa (Bryce)
-60	-1	#ba5a1a	Mesa Plateau F M
-61	-1	#ba4e06	Mesa Plateau M
+129	-1	#ffd504	Sunflower Plains
+130	-1	#f4ff3f	Desert M
+131	95	#8c4500	Extreme Hills M
+132	-1	#e02f4a	Flower Forest
+133	-1	#0a6148	Taiga M
+134	-1	#58630e	Swampland M
+140	0	#ace8e8	Ice Plains Spikes
+141	0	#91cccc	Ice Mountains Spikes
+149	-1	#30ba07	Jungle M
+151	-1	#3e9130	JungleEdge M
+155	-1	#228548	Birch Forest M
+156	-1	#2b7547	Birch Forest Hills M
+157	-1	#1a5428	Roofed Forest M
+158	0	#0f706b	Cold Taiga M
+160	-1	#198058	Mega Spruce Taiga
+161	-1	#156e4c	Mega Spruce Taiga Hills
+162	95	#ba5c00	Extreme Hills+ M
+163	-1	#858111	Savanna M
+164	-1	#87830b	Savanna Plateau M
+165	-1	#ff5100	Mesa (Bryce)
+166	-1	#ba5a1a	Mesa Plateau F M
+167	-1	#ba4e06	Mesa Plateau M
 255	-1	#333333	(Uncalculated)
 `
 
