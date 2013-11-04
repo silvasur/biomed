@@ -234,7 +234,7 @@ func (bl *biomeList) onAdd() {
 }
 
 func (bl *biomeList) onDel() {
-	idx, iter, _ := bl.treeviewIdx()
+	idx, iter, path := bl.treeviewIdx()
 	if idx < 0 {
 		return
 	}
@@ -243,6 +243,9 @@ func (bl *biomeList) onDel() {
 	bl.biomes = bl.biomes[:len(bl.biomes)-1]
 
 	bl.lStore.Remove(iter)
+	if len(bl.biomes) > 0 {
+		bl.treeview.SetCursor(path, nil, false)
+	}
 }
 func (bl *biomeList) onUp() {
 	idx, iter, path := bl.treeviewIdx()
