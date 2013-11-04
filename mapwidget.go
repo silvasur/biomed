@@ -16,7 +16,7 @@ const (
 
 type GUICallbacks struct {
 	reportFail func(msg string)
-	updateInfo func(x, z int, bio mcmap.Biome)
+	updateInfo func(x, z int, bio mcmap.Biome, name string)
 	setBusy    func(bool)
 }
 
@@ -41,6 +41,8 @@ type MapWidget struct {
 	bg *gdk.Pixmap
 
 	regWrap *RegionWrapper
+
+	bioLookup BiomeLookup
 }
 
 func (mw *MapWidget) calcChunkRect() {
@@ -89,7 +91,7 @@ func (mw *MapWidget) movement(ctx *glib.CallbackContext) {
 	if _bio, ok := mw.regWrap.GetBiomeAt(x, z); ok {
 		bio = _bio
 	}
-	mw.guicbs.updateInfo(x, z, bio)
+	mw.guicbs.updateInfo(x, z, bio, mw.bioLookup.Name(bio))
 
 	if mw.panning {
 		if (mw.mx1 != -1) && (mw.my1 != -1) {
@@ -231,7 +233,17 @@ func (mw *MapWidget) updateGUI() {
 	mw.dArea.GetWindow().Invalidate(nil, false)
 }
 
-func NewMapWidget(guicbs GUICallbacks) *MapWidget {
+func (mw *MapWidget) updateBioLookup(lookup BiomeLookup) {
+	mw.bioLookup = lookup
+	mw.regWrap.bioLookup = lookup
+
+	if mw.regWrap.RegionLoaded() {
+		mw.regWrap.FlushTiles()
+		mw.regWrap.UpdateTiles()
+	}
+}
+
+func NewMapWidget(guicbs GUICallbacks, bioLookup BiomeLookup) *MapWidget {
 	dArea := gtk.NewDrawingArea()
 
 	mw := &MapWidget{
@@ -240,9 +252,11 @@ func NewMapWidget(guicbs GUICallbacks) *MapWidget {
 		showBiomes: true,
 		mx1:        -1,
 		my1:        -1,
+		bioLookup:  bioLookup,
 	}
 
 	mw.regWrap = NewRegionWrapper(mw.updateGUI, guicbs)
+	mw.regWrap.bioLookup = bioLookup
 
 	dArea.Connect("configure-event", mw.configure)
 	dArea.Connect("expose-event", mw.expose)
