@@ -79,6 +79,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	dlg.Destroy()
 }
 
+func (g *GUI) biomeEditor() {
+	ed := NewBiomeInfoEditor(g.biomes)
+	rv := ed.Run()
+	ed.Destroy()
+	if rv == gtk.RESPONSE_OK {
+		g.biomes = ed.Biomes()
+		g.updateBiomeInfo()
+	}
+}
+
 func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	menubar := gtk.NewMenuBar()
 
@@ -106,24 +116,6 @@ func (g *GUI) mkMenuBar() *gtk.MenuBar {
 	fileMenuItem := gtk.NewMenuItemWithLabel("File")
 	fileMenuItem.SetSubmenu(fileMenu)
 	menubar.Append(fileMenuItem)
-
-	prefMenu := gtk.NewMenu()
-
-	confbiomes := gtk.NewMenuItemWithLabel("Configure Biomes")
-	confbiomes.Connect("activate", func() {
-		ed := NewBiomeInfoEditor(g.biomes)
-		rv := ed.Run()
-		ed.Destroy()
-		if rv == gtk.RESPONSE_OK {
-			g.biomes = ed.Biomes()
-			g.updateBiomeInfo()
-		}
-	})
-	prefMenu.Append(confbiomes)
-
-	prefMenuItem := gtk.NewMenuItemWithLabel("Preferences")
-	prefMenuItem.SetSubmenu(prefMenu)
-	menubar.Append(prefMenuItem)
 
 	helpMenu := gtk.NewMenu()
 
@@ -216,7 +208,14 @@ func (g *GUI) mkSidebar() *gtk.ScrolledWindow {
 	sbVBox.PackStart(drawHBox, false, false, 3)
 
 	sbVBox.PackStart(gtk.NewHSeparator(), false, false, 3)
-	sbVBox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), false, false, 3)
+	bioHeaderHBox := gtk.NewHBox(false, 0)
+	bioHeaderHBox.PackStart(labelCustomFont("Biomes", "Sans Bold 14"), true, false, 0)
+	editBiomesBtn := gtk.NewButton()
+	editBiomesBtn.Add(gtk.NewImageFromStock(gtk.STOCK_EDIT, gtk.ICON_SIZE_SMALL_TOOLBAR))
+	editBiomesBtn.Connect("clicked", g.biomeEditor)
+	editBiomesBtn.SetTooltipText("Configure Biomes")
+	bioHeaderHBox.PackStart(editBiomesBtn, false, false, 0)
+	sbVBox.PackStart(bioHeaderHBox, false, false, 3)
 
 	g.bioVBoxWrap = gtk.NewVBox(false, 0)
 	g.bioVBox = gtk.NewVBox(false, 0)
