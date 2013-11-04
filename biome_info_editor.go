@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/kch42/gomcmap/mcmap"
 	"github.com/mattn/go-gtk/gdk"
-	"github.com/mattn/go-gtk/gdkpixbuf"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
 	"os"
@@ -111,7 +110,7 @@ func newBiomeList() *biomeList {
 	bl := &biomeList{
 		HBox:     gtk.NewHBox(false, 0),
 		treeview: gtk.NewTreeView(),
-		lStore:   gtk.NewListStore(gdkpixbuf.GetType(), glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING),
+		lStore:   gtk.NewListStore(glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING, glib.G_TYPE_STRING),
 	}
 
 	scroll := gtk.NewScrolledWindow(nil, nil)
@@ -120,10 +119,12 @@ func newBiomeList() *biomeList {
 	bl.PackStart(scroll, true, true, 3)
 
 	bl.treeview.SetModel(bl.lStore)
-	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Color", gtk.NewCellRendererPixbuf(), "pixbuf", 0))
+	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Color", gtk.NewCellRendererText(), "background", 0))
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("ID", gtk.NewCellRendererText(), "text", 1))
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Snowline", gtk.NewCellRendererText(), "text", 2))
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Name", gtk.NewCellRendererText(), "text", 3))
+
+	bl.treeview.Connect("cursor-changed", bl.onCursorChanged)
 
 	vbox := gtk.NewVBox(false, 0)
 
@@ -151,12 +152,26 @@ func newBiomeList() *biomeList {
 	return bl
 }
 
+func (bl *biomeList) setBiome(iter *gtk.TreeIter, biome BiomeInfo) {
+	bl.lStore.Set(iter, biome.Color, strconv.FormatInt(int64(biome.ID), 10), strconv.FormatInt(int64(biome.SnowLine), 10), biome.Name)
+}
+
 func (bl *biomeList) SetBiomes(biomes []BiomeInfo) {
 	bl.biomes = biomes
-	// TODO: Update View
+
+	bl.lStore.Clear()
+	var iter gtk.TreeIter
+	for _, bio := range biomes {
+		bl.lStore.Append(&iter)
+		bl.setBiome(&iter, bio)
+	}
 }
 
 func (bl *biomeList) Biomes() []BiomeInfo { return bl.biomes }
+
+func (bl *biomeList) onCursorChanged() {
+	// TODO
+}
 
 func (bl *biomeList) onAdd()  {} // TODO
 func (bl *biomeList) onDel()  {} // TODO
@@ -193,7 +208,7 @@ func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 	vbox.PackStart(btnHBox, false, false, 3)
 
 	ed.biolist.SetBiomes(biomes)
-	vbox.PackStart(ed.biolist, false, false, 3)
+	vbox.PackStart(ed.biolist, true, true, 3)
 
 	editFrame := newBiomeEditFrame()
 	vbox.PackStart(editFrame, false, false, 3)
