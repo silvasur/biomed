@@ -15,6 +15,7 @@ type biomeEditFrame struct {
 	applyBtn                          *gtk.Button
 	idInput, snowLineInput, nameInput *gtk.Entry
 	colorInput                        *gtk.ColorButton
+	bList                             *biomeList
 }
 
 func newBiomeEditFrame() *biomeEditFrame {
@@ -51,6 +52,8 @@ func newBiomeEditFrame() *biomeEditFrame {
 	vbox.PackStart(frm.applyBtn, false, false, 3)
 	frm.Add(vbox)
 
+	frm.applyBtn.Connect("clicked", frm.doApply)
+
 	return frm
 }
 
@@ -59,6 +62,15 @@ func (frm *biomeEditFrame) setBiomeInfo(info BiomeInfo) {
 	frm.idInput.SetText(strconv.FormatInt(int64(info.ID), 10))
 	frm.snowLineInput.SetText(strconv.FormatInt(int64(info.SnowLine), 10))
 	frm.nameInput.SetText(info.Name)
+}
+
+func (frm *biomeEditFrame) doApply() {
+	biome, ok := frm.getBiomeInfo()
+	if !ok {
+		return
+	}
+
+	frm.bList.setCurrentBiome(biome)
 }
 
 func (frm *biomeEditFrame) getBiomeInfo() (BiomeInfo, bool) {
@@ -86,7 +98,7 @@ func (frm *biomeEditFrame) getBiomeInfo() (BiomeInfo, bool) {
 		ID:       mcmap.Biome(id),
 		SnowLine: int(snow),
 		Name:     name,
-		Color:    fmt.Sprintf("#%02x%02x%02x", col.Red()<<8, col.Green()<<8, col.Blue()<<8),
+		Color:    fmt.Sprintf("#%02x%02x%02x", col.Red()>>8, col.Green()>>8, col.Blue()>>8),
 	}, true
 }
 
@@ -104,6 +116,7 @@ type biomeList struct {
 	treeview *gtk.TreeView
 	lStore   *gtk.ListStore
 	biomes   []BiomeInfo
+	editfrm  *biomeEditFrame
 }
 
 func newBiomeList() *biomeList {
@@ -124,6 +137,7 @@ func newBiomeList() *biomeList {
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Snowline", gtk.NewCellRendererText(), "text", 2))
 	bl.treeview.AppendColumn(gtk.NewTreeViewColumnWithAttributes("Name", gtk.NewCellRendererText(), "text", 3))
 
+	bl.treeview.GetSelection().SetMode(gtk.SELECTION_SINGLE)
 	bl.treeview.Connect("cursor-changed", bl.onCursorChanged)
 
 	vbox := gtk.NewVBox(false, 0)
@@ -156,6 +170,15 @@ func (bl *biomeList) setBiome(iter *gtk.TreeIter, biome BiomeInfo) {
 	bl.lStore.Set(iter, biome.Color, strconv.FormatInt(int64(biome.ID), 10), strconv.FormatInt(int64(biome.SnowLine), 10), biome.Name)
 }
 
+func (bl *biomeList) setCurrentBiome(biome BiomeInfo) {
+	idx, iter := bl.treeviewIdx()
+	if idx < 0 {
+		return
+	}
+	bl.biomes[idx] = biome
+	bl.setBiome(iter, biome)
+}
+
 func (bl *biomeList) SetBiomes(biomes []BiomeInfo) {
 	bl.biomes = biomes
 
@@ -169,14 +192,65 @@ func (bl *biomeList) SetBiomes(biomes []BiomeInfo) {
 
 func (bl *biomeList) Biomes() []BiomeInfo { return bl.biomes }
 
-func (bl *biomeList) onCursorChanged() {
-	// TODO
+func (bl *biomeList) treeviewIdx() (int, *gtk.TreeIter) {
+	var path *gtk.TreePath
+	var column *gtk.TreeViewColumn
+	bl.treeview.GetCursor(&path, &column)
+
+	idxs := path.GetIndices()
+	if len(idxs) != 1 {
+		return -1, nil
+	}
+	var iter gtk.TreeIter
+	bl.lStore.GetIter(&iter, path)
+
+	return idxs[0], &iter
 }
 
-func (bl *biomeList) onAdd()  {} // TODO
-func (bl *biomeList) onDel()  {} // TODO
+func (bl *biomeList) onCursorChanged() {
+	idx, _ := bl.treeviewIdx()
+	if idx < 0 {
+		return
+	}
+
+	bl.editfrm.setBiomeInfo(bl.biomes[idx])
+}
+
+func (bl *biomeList) onAdd() {
+	bio := BiomeInfo{
+		Color:    "#000000",
+		ID:       0,
+		SnowLine: 255,
+		Name:     "(new)",
+	}
+	bl.biomes = append(bl.biomes, bio)
+
+	var iter gtk.TreeIter
+	bl.lStore.Append(&iter)
+	bl.setBiome(&iter, bio)
+	path := gtk.NewTreePath()
+	path.AppendIndex(len(bl.biomes) - 1)
+	bl.treeview.SetCursor(path, nil, false)
+}
+
+func (bl *biomeList) onDel() {
+	idx, iter := bl.treeviewIdx()
+	if idx < 0 {
+		return
+	}
+
+	copy(bl.biomes[idx:], bl.biomes[idx+1:])
+	bl.biomes = bl.biomes[:len(bl.biomes)-1]
+
+	bl.lStore.Remove(iter)
+}
 func (bl *biomeList) onUp()   {} // TODO
 func (bl *biomeList) onDown() {} // TODO
+
+func connectBiomeListEditFrame(bl *biomeList, frm *biomeEditFrame) {
+	bl.editfrm = frm
+	frm.bList = bl
+}
 
 type BiomeInfoEditor struct {
 	*gtk.Dialog
@@ -211,6 +285,7 @@ func NewBiomeInfoEditor(biomes []BiomeInfo) *BiomeInfoEditor {
 	vbox.PackStart(ed.biolist, true, true, 3)
 
 	editFrame := newBiomeEditFrame()
+	connectBiomeListEditFrame(ed.biolist, editFrame)
 	vbox.PackStart(editFrame, false, false, 3)
 
 	ed.AddButton("Cancel", gtk.RESPONSE_CANCEL)
