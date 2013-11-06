@@ -15,7 +15,7 @@ func allMaps() map[string]string {
 	case "darwin":
 		savesDir = fmt.Sprintf("%s/Library/Application Support/minecraft/saves", os.Getenv("HOME"))
 	case "windows":
-		savesDir = fmt.Sprintf(`%s\.minecraft`, os.Getenv("appdata"))
+		savesDir = fmt.Sprintf(`%s\.minecraft\saves`, os.Getenv("appdata"))
 	default:
 		return nil
 	}
