@@ -7,6 +7,7 @@ import (
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
 	"os"
+	"path"
 )
 
 type GUI struct {
@@ -31,23 +32,45 @@ type GUI struct {
 }
 
 func (g *GUI) openWorldDlg() {
-	dlg := gtk.NewFileChooserDialog("Open World (region directory)", g.window, gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER, "Open Region dir", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+	dlg := gtk.NewFileChooserDialog("Open World (level.dat)", g.window, gtk.FILE_CHOOSER_ACTION_OPEN, "Open", gtk.RESPONSE_OK, "Cancel", gtk.RESPONSE_CANCEL)
+	filter := gtk.NewFileFilter()
+	filter.AddPattern("level.dat")
+	filter.SetName("level.dat")
+	dlg.AddFilter(filter)
 	if dlg.Run() == gtk.RESPONSE_OK {
 		g.openWorld(dlg.GetFilename())
 	}
 	dlg.Destroy()
 }
 
-func (g *GUI) openWorld(path string) {
-	region, err := mcmap.OpenRegion(path, false)
+func readWorld(p string) (*mcmap.Region, int, int, error) {
+	f, err := os.Open(p)
 	if err != nil {
-		dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_WARNING, gtk.BUTTONS_OK, "Could not load world %s:\n%s", path, err.Error())
+		return nil, 0, 0, err
+	}
+	defer f.Close()
+
+	x, z, err := getMapCenter(f)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	dir, _ := path.Split(p)
+	region, err := mcmap.OpenRegion(path.Join(dir, "region"), false)
+	return region, x, z, err
+}
+
+func (g *GUI) openWorld(p string) {
+	region, centerX, centerZ, err := readWorld(p)
+	if err != nil {
+		dlg := gtk.NewMessageDialog(g.window, gtk.DIALOG_MODAL|gtk.DIALOG_DESTROY_WITH_PARENT, gtk.MESSAGE_WARNING, gtk.BUTTONS_OK, "Could not load world %s:\n%s", p, err.Error())
 		dlg.Run()
 		dlg.Destroy()
 	}
 
 	g.menuitemSave.SetSensitive(true)
 
+	g.mapw.SetCenter(centerX, centerZ)
 	g.mapw.SetRegion(region)
 }
 

@@ -63,6 +63,12 @@ func (mw *MapWidget) SetTool(t Tool)                 { mw.regWrap.SetTool(t) }
 
 func (mw *MapWidget) Save() { mw.regWrap.Save() }
 
+func (mw *MapWidget) SetCenter(x, z int) {
+	mw.offX = x*zoom - mw.w/2
+	mw.offZ = z*zoom - mw.h/2
+	mw.updateChunkBounds()
+}
+
 func (mw *MapWidget) updateChunkBounds() {
 	startX := int(math.Floor(float64(mw.offX) / tileSize))
 	startZ := int(math.Floor(float64(mw.offZ) / tileSize))

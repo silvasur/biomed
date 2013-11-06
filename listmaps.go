@@ -42,12 +42,13 @@ func allMaps() map[string]string {
 		}
 		p := path.Join(savesDir, info.Name())
 
-		fi, err := os.Stat(path.Join(p, "level.dat"))
+		leveldat := path.Join(p, "level.dat")
+		fi, err := os.Stat(leveldat)
 		if (err != nil) || (!fi.Mode().IsRegular()) {
 			continue
 		}
 
-		maps[info.Name()] = path.Join(p, "region")
+		maps[info.Name()] = leveldat
 	}
 
 	return maps
