@@ -23,7 +23,7 @@ Although everything seems to work, please make a backup of your maps, just in ca
 ## Precompiled versions
 
 * Linux (64bit): [biomed-linux64.tar.bz2](http://kch42.de/progs/biomed/biomed-linux64.tar.bz2)
-* Windows (32bit, tested with Win8): [biomed-win32.zip](biomed-win32.zip)
+* Windows (32bit, tested with Win8): [biomed-win32.zip](http://kch42.de/progs/biomed/biomed-win32.zip)
 
 ## Dependencies / System Requirements
 
