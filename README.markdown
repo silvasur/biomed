@@ -22,8 +22,8 @@ Although everything seems to work, please make a backup of your maps, just in ca
 
 ## Precompiled versions
 
-* Linux (64bit): [biomed-linux64.tar.bz2](http://kch42.de/progs/biomed/biomed-linux64.tar.bz2)
-* Windows (32bit, tested with Win8): [biomed-win32.zip](http://kch42.de/progs/biomed/biomed-win32.zip)
+* Linux (64bit): [biomed-linux64.tar.bz2](http://hi-im.laria.me/progs/biomed/biomed-linux64.tar.bz2)
+* Windows (32bit, tested with Win8): [biomed-win32.zip](http://hi-im.laria.me/progs/biomed/biomed-win32.zip)
 
 ## Dependencies / System Requirements
 
@@ -39,7 +39,7 @@ You will need Go (1.1 or greater) and the development files for GTK 2.x. Both sh
 
 Create a directory that contains the directories `bin`, `src` and `pkg` and set the `GOPATH` environment variable to that directory.
 
-Then compiling is done by running: `go get github.com/kch42/biomed`
+Then compiling is done by running: `go get github.com/silvasur/biomed`
 
 ### Windows
 
@@ -49,4 +49,4 @@ Create a directory that contains the directories `bin`, `src` and `pkg` and set 
 
 Follow these instructions for installing go-gtk: [http://stackoverflow.com/questions/16999498/how-to-set-up-gtk-for-go/17042596#17042596](http://stackoverflow.com/questions/16999498/how-to-set-up-gtk-for-go/17042596#17042596)
 
-Then compiling is done by running: `go get github.com/kch42/biomed`
+Then compiling is done by running: `go get github.com/silvasur/biomed`

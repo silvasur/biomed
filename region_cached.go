@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/kch42/gomcmap/mcmap"
+	"github.com/silvasur/gomcmap/mcmap"
 )
 
 type CachedRegion struct {

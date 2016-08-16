@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/kch42/gomcmap/mcmap"
+	"github.com/silvasur/gomcmap/mcmap"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"
@@ -79,9 +79,9 @@ func (g *GUI) aboutDlg() {
 	dlg.SetProgramName("biomed")
 	dlg.SetComments("A Minecraft Biome Editor")
 	dlg.SetVersion("β")
-	dlg.SetCopyright("© 2013 by Kevin Chabowski")
-	dlg.SetAuthors([]string{"Kevin Chabowski <kevin@kch42.de>"})
-	dlg.SetLicense(`Copyright (c) 2013 Kevin Chabowski
+	dlg.SetCopyright("© 2013 by Laria Carolin Chabowski")
+	dlg.SetAuthors([]string{"Laria Carolin Chabowski <laria@laria.me>"})
+	dlg.SetLicense(`Copyright (c) 2013 Laria Carolin Chabowski
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

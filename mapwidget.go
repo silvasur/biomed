@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/kch42/gomcmap/mcmap"
+	"github.com/silvasur/gomcmap/mcmap"
 	"github.com/mattn/go-gtk/gdk"
 	"github.com/mattn/go-gtk/glib"
 	"github.com/mattn/go-gtk/gtk"

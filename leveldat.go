@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/kch42/gonbt/nbt"
+	"github.com/silvasur/gonbt/nbt"
 	"io"
 )
 
